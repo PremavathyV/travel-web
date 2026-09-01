@@ -151,7 +151,7 @@
       document.getElementById('rcBookBtn').onclick = function () {
         const extra = addMsg ? addMsg.value.trim() : '';
         const msg = encodeURIComponent(`Hello Sundari Travels,\n\nRoute: ${pickup} → ${drop}\nTrip: ${isRT?'Round Trip':'One Way'}\nVehicle: ${activeVehicle}\nDistance: ${dStr} km\nRate: ${inr(activeRate)}/km\nBase Fare: ${inr(baseFare)}\nDriver Bata: ${inr(activeBata)}\nEstimated Total: ${inr(total)}${extra?'\nMessage: '+extra:''}\n\nPlease confirm my booking.`);
-        window.open(`https://wa.me/916385700864?text=${msg}`,'_blank','noopener');
+        window.open(`https://wa.me/919600924938?text=${msg}`,'_blank','noopener');
       };
     } catch (err) {
       alert('Could not calculate route. Please check location names.\n\n'+err.message);
