@@ -840,6 +840,8 @@
 
         <!-- Results -->
         <div class="rc-results" id="rcResults">
+
+          <!-- Distance + Time row -->
           <div class="rc-dist-time">
             <div class="rc-dt-box">
               <span class="rc-dt-label">Road Distance</span>
@@ -850,32 +852,53 @@
               <span class="rc-dt-val" id="rcTime">--</span>
             </div>
           </div>
-          <div class="rc-fare-grid">
-            <div class="rc-fare-item">
-              <span class="rc-fare-label">Rate / Km</span>
-              <span class="rc-fare-val" id="rcRate">₹0/km</span>
+
+          <!-- Fare breakdown — list style like reference -->
+          <div class="rc-fare-breakdown" id="rcFareBreakdown" style="display:none;">
+            <div class="rc-fare-row">
+              <span class="rc-fare-lbl"><i class="fas fa-tachometer-alt"></i> Rate / km</span>
+              <span class="rc-fare-amt" id="rcRate">₹0</span>
             </div>
-            <div class="rc-fare-item">
-              <span class="rc-fare-label">Base Fare</span>
-              <span class="rc-fare-val" id="rcBase">₹0</span>
+            <div class="rc-fare-row">
+              <span class="rc-fare-lbl"><i class="fas fa-car"></i> Base Fare <small id="rcDistLabel"></small></span>
+              <span class="rc-fare-amt" id="rcBase">₹0</span>
             </div>
-            <div class="rc-fare-item">
-              <span class="rc-fare-label">Driver Bata</span>
-              <span class="rc-fare-val" id="rcBata">₹0</span>
+            <div class="rc-fare-row">
+              <span class="rc-fare-lbl"><i class="fas fa-user-tie"></i> Driver Bata</span>
+              <span class="rc-fare-amt" id="rcBata">₹0</span>
             </div>
-            <div class="rc-fare-item rc-total">
-              <span class="rc-fare-label">Estimated Total</span>
-              <span class="rc-fare-val rc-total-val" id="rcTotal">₹0</span>
+            <div class="rc-fare-divider"></div>
+            <div class="rc-fare-total-row">
+              <span class="rc-fare-total-lbl">Estimated Total</span>
+              <span class="rc-fare-total-val" id="rcTotal">₹0</span>
             </div>
+            <p class="rc-fare-note">
+              <i class="fas fa-info-circle"></i>
+              Toll, parking &amp; state permit extra. Driver bata included.
+            </p>
+            <div class="rc-not-included">
+              <span class="rc-ni-label">NOT INCLUDED IN THIS FARE:</span>
+              <div class="rc-ni-tags">
+                <span><i class="fas fa-road"></i> Toll charges</span>
+                <span><i class="fas fa-file-alt"></i> State permit charges</span>
+                <span><i class="fas fa-parking"></i> Parking charges</span>
+                <span><i class="fas fa-suitcase"></i> Luggage charges</span>
+              </div>
+            </div>
+
+            <!-- Additional message -->
+            <div class="rc-add-msg-wrap">
+              <label class="rc-add-msg-label"><i class="fas fa-comment-alt"></i> ADDITIONAL MESSAGE</label>
+              <textarea id="rcAddMsg" class="rc-add-msg" rows="3" placeholder="Any special requirements or instructions..."></textarea>
+            </div>
+
+            <!-- Book CTA -->
+            <button class="rc-book-btn" id="rcBookBtn">
+              <span>Book via WhatsApp</span>
+              <i class="fab fa-whatsapp"></i>
+            </button>
           </div>
-          <div class="rc-fare-note">
-            <i class="fas fa-info-circle"></i>
-            Toll, parking &amp; state permit extra. Final fare confirmed at booking.
-          </div>
-          <!-- Book CTA after result -->
-          <a href="#booking" class="rc-book-btn" id="rcBookBtn" style="display:none;">
-            <i class="fas fa-taxi"></i> Book This Route via WhatsApp
-          </a>
+
         </div>
       </div>
 
