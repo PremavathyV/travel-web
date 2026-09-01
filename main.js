@@ -182,3 +182,145 @@
   });
 
 })();
+
+
+/* =====================================================
+   BOOKING FORM — Inline Fare Calculator
+   ===================================================== */
+(function () {
+  if (typeof L === 'undefined') return;
+
+  const RATES = { sedan: 15, suv: 20, innova: 21 };
+  const BATA  = 250;
+  let bfMap = null, bfRoute = null, bfPinA = null, bfPinB = null;
+
+  function initBFMap() {
+    if (bfMap) return;
+    bfMap = L.map('bfMap', { zoomControl: true, scrollWheelZoom: false }).setView([11, 78.5], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 18
+    }).addTo(bfMap);
+  }
+
+  function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
+  function fmtDur(m) { const h = Math.floor(m/60), r = m%60; return h ? `${h}h ${r?r+'m':''}`.trim() : `${r}m`; }
+
+  function mkDot(color) {
+    return L.divIcon({ className:'', iconSize:[13,13], iconAnchor:[6,6],
+      html:`<div style="width:13px;height:13px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.5)"></div>` });
+  }
+
+  async function bfGeocode(q) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q+', India')}&limit=1`);
+    const d = await res.json();
+    if (!d.length) throw new Error('Not found: ' + q);
+    return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) };
+  }
+
+  async function bfGetRoute(a, b) {
+    const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(t);
+      const d = await res.json();
+      if (d.routes && d.routes.length) {
+        const r = d.routes[0];
+        return { km: (r.distance/1000).toFixed(1), min: Math.round(r.duration/60), geo: r.geometry };
+      }
+    } catch (_) {}
+    // Haversine fallback
+    const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lon-a.lon)*Math.PI/180;
+    const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+    const km = (R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))*1.3).toFixed(1);
+    return { km, min: Math.round(parseFloat(km)/55*60), geo: null };
+  }
+
+  async function calcBFFare() {
+    const pickup  = document.getElementById('pickupLoc').value.trim();
+    const drop    = document.getElementById('dropLoc').value.trim();
+    const vehicle = document.getElementById('vehicleType').value.toLowerCase();
+    const tripRaw = document.querySelector('input[name="tripType"]:checked');
+    const isRT    = tripRaw && tripRaw.value === 'Round Trip';
+
+    if (!pickup || !drop) { alert('Please enter Pickup and Drop locations first.'); return; }
+    if (!vehicle || vehicle === '') { alert('Please select a vehicle type first.'); return; }
+
+    const btn = document.getElementById('bfCalcBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+
+    try {
+      const [from, to] = await Promise.all([bfGeocode(pickup), bfGeocode(drop)]);
+      const route = await bfGetRoute(from, to);
+
+      const rate  = RATES['sedan']; // default
+      // detect vehicle rate
+      let vRate = 15;
+      if (vehicle.includes('suv')) vRate = 20;
+      else if (vehicle.includes('innova')) vRate = 21;
+
+      const dist      = parseFloat(route.km);
+      const actualDist = isRT ? dist * 2 : dist;
+      const baseFare  = Math.round(actualDist * vRate);
+      const total     = baseFare + BATA;
+
+      // Update UI
+      document.getElementById('bfDistance').textContent = actualDist.toFixed(1) + ' km';
+      document.getElementById('bfDuration').textContent = fmtDur(route.min * (isRT ? 2 : 1));
+      document.getElementById('bfRate').textContent  = inr(vRate) + '/km';
+      document.getElementById('bfBase').textContent  = inr(baseFare);
+      document.getElementById('bfBata').textContent  = inr(BATA);
+      document.getElementById('bfTotal').textContent = inr(total);
+
+      // Show card
+      const card = document.getElementById('bfFareCard');
+      card.style.display = 'block';
+
+      // Map
+      initBFMap();
+      if (bfRoute)  { bfMap.removeLayer(bfRoute);  bfRoute  = null; }
+      if (bfPinA)   { bfMap.removeLayer(bfPinA);   bfPinA   = null; }
+      if (bfPinB)   { bfMap.removeLayer(bfPinB);   bfPinB   = null; }
+
+      bfPinA = L.marker([from.lat, from.lon], { icon: mkDot('#22c55e') }).bindPopup(`<b>Pickup:</b> ${pickup}`).addTo(bfMap);
+      bfPinB = L.marker([to.lat,   to.lon],   { icon: mkDot('#ef4444') }).bindPopup(`<b>Drop:</b> ${drop}`).addTo(bfMap);
+
+      if (route.geo) {
+        bfRoute = L.geoJSON(route.geo, { style: { color:'#F5B800', weight:5, opacity:0.85 } }).addTo(bfMap);
+        bfMap.fitBounds(bfRoute.getBounds(), { padding:[20,20] });
+      } else {
+        bfRoute = L.polyline([[from.lat,from.lon],[to.lat,to.lon]], { color:'#F5B800', weight:4, dashArray:'8 6', opacity:0.7 }).addTo(bfMap);
+        bfMap.fitBounds([[from.lat,from.lon],[to.lat,to.lon]], { padding:[30,30] });
+      }
+      setTimeout(() => bfMap.invalidateSize(), 150);
+
+    } catch (err) {
+      alert('Could not calculate: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-route"></i> Calculate Distance &amp; Fare';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('bfCalcBtn');
+    if (btn) btn.addEventListener('click', calcBFFare);
+
+    // Re-calc when vehicle changes
+    const vSel = document.getElementById('vehicleType');
+    if (vSel) vSel.addEventListener('change', function () {
+      const card = document.getElementById('bfFareCard');
+      if (card && card.style.display !== 'none') calcBFFare();
+    });
+
+    // Re-calc when trip type changes
+    document.querySelectorAll('input[name="tripType"]').forEach(r => {
+      r.addEventListener('change', function () {
+        const card = document.getElementById('bfFareCard');
+        if (card && card.style.display !== 'none') calcBFFare();
+      });
+    });
+  });
+})();

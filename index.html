@@ -244,6 +244,44 @@
               </select>
               <span class="form-error" id="vehicleTypeErr"></span>
             </div>
+
+            <!-- ── Fare Calculator inside Booking Form ── -->
+            <div class="form-group form-group-full">
+              <button type="button" class="btn-calc-fare" id="bfCalcBtn">
+                <i class="fas fa-route"></i> Calculate Distance &amp; Fare
+              </button>
+            </div>
+
+            <!-- Fare result card (hidden until calculated) -->
+            <div class="form-group form-group-full" id="bfFareCard" style="display:none;">
+              <div class="bf-fare-result">
+                <div class="bf-dist-row">
+                  <div class="bf-dt">
+                    <span class="bf-dt-lbl">Road Distance</span>
+                    <span class="bf-dt-val" id="bfDistance">--</span>
+                  </div>
+                  <div class="bf-dt">
+                    <span class="bf-dt-lbl">Est. Duration</span>
+                    <span class="bf-dt-val" id="bfDuration">--</span>
+                  </div>
+                </div>
+                <div class="bf-fare-rows">
+                  <div class="bf-fare-row"><span>Rate / km</span><span id="bfRate">₹0</span></div>
+                  <div class="bf-fare-row"><span>Base Fare</span><span id="bfBase">₹0</span></div>
+                  <div class="bf-fare-row"><span>Driver Bata</span><span id="bfBata">₹0</span></div>
+                  <div class="bf-fare-divider"></div>
+                  <div class="bf-fare-row bf-fare-total">
+                    <span>Estimated Total</span>
+                    <span id="bfTotal">₹0</span>
+                  </div>
+                </div>
+                <p class="bf-note"><i class="fas fa-info-circle"></i> Toll, parking &amp; permit charges extra.</p>
+                <!-- Map -->
+                <div class="bf-map-wrap">
+                  <div id="bfMap" class="bf-map"></div>
+                </div>
+              </div>
+            </div>
             <div class="form-group form-group-full">
               <label for="addMessage">Additional Message</label>
               <textarea id="addMessage" name="addMessage" rows="3" placeholder="Any special requirements, luggage details, etc."></textarea>
