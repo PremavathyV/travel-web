@@ -604,6 +604,7 @@ section { position: relative; }
   background: rgba(255,255,255,0.05);
   transition: var(--transition);
   outline: none;
+  color-scheme: dark;
 }
 .form-group input::placeholder,
 .form-group textarea::placeholder { color: var(--text-light); }
