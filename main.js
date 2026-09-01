@@ -893,3 +893,226 @@ function closeList(list) {
 
 document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
 
+
+
+/* =====================================================
+   ROUTE CALCULATOR — OpenStreetMap + OSRM (Free, no API key)
+   ===================================================== */
+(function () {
+  // Wait for Leaflet to be available
+  if (typeof L === 'undefined') return;
+
+  let rcMap = null;
+  let rcRouteLayer = null;
+  let rcPickupMarker = null;
+  let rcDropMarker = null;
+
+  // Active vehicle state
+  let activeRate = 15;
+  let activeBase = 300;
+  let activeBata = 250;
+  let activeVehicle = 'Sedan';
+
+  // Initialize map
+  function initRCMap() {
+    if (rcMap) return;
+    rcMap = L.map('rcMap', { zoomControl: true, scrollWheelZoom: false }).setView([11.0, 78.5], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      maxZoom: 18
+    }).addTo(rcMap);
+  }
+
+  // Geocode using Nominatim (free)
+  async function geocode(query) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=in`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await res.json();
+    if (data.length === 0) throw new Error('Location not found: ' + query);
+    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: data[0].display_name };
+  }
+
+  // Get road route from OSRM (free)
+  async function getRoute(from, to) {
+    const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.routes || data.routes.length === 0) throw new Error('No route found');
+    const route = data.routes[0];
+    return {
+      distanceKm: (route.distance / 1000).toFixed(1),
+      durationMin: Math.round(route.duration / 60),
+      geometry: route.geometry
+    };
+  }
+
+  // Format duration
+  function formatDuration(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m} min`;
+    return `${h} hr${h > 1 ? 's' : ''} ${m > 0 ? m + ' min' : ''}`;
+  }
+
+  // Calculate fare
+  function calcFare(distKm, rate, base, bata, isRoundTrip) {
+    const dist = parseFloat(distKm);
+    const actualDist = isRoundTrip ? dist * 2 : dist;
+    const distFare = Math.round(actualDist * rate);
+    const total = distFare + base + bata;
+    return { rate, base, bata, total, actualDist: actualDist.toFixed(1) };
+  }
+
+  // Custom gold marker
+  function goldMarker(type) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="
+        width:18px;height:18px;border-radius:50%;
+        background:${type === 'pickup' ? '#22c55e' : '#ef4444'};
+        border:3px solid #fff;
+        box-shadow:0 0 8px rgba(0,0,0,0.4);
+      "></div>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+  }
+
+  // Main calculate function
+  async function calculateRoute() {
+    const pickup = document.getElementById('rcPickup').value.trim();
+    const drop = document.getElementById('rcDrop').value.trim();
+    const isRoundTrip = document.querySelector('input[name="rcTrip"]:checked').value === 'roundtrip';
+
+    if (!pickup || !drop) {
+      alert('Please enter both pickup and drop locations.');
+      return;
+    }
+
+    const btn = document.getElementById('rcCalcBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+
+    try {
+      initRCMap();
+
+      // Geocode both locations
+      const [fromCoord, toCoord] = await Promise.all([geocode(pickup), geocode(drop)]);
+
+      // Get route
+      const route = await getRoute(fromCoord, toCoord);
+
+      // Calc fare
+      const fare = calcFare(route.distanceKm, activeRate, activeBase, activeBata, isRoundTrip);
+
+      // Update UI
+      document.getElementById('rcDistance').textContent = `${fare.actualDist} km`;
+      document.getElementById('rcTime').textContent = formatDuration(route.durationMin * (isRoundTrip ? 2 : 1));
+      document.getElementById('rcRate').textContent = `₹${fare.rate}/km`;
+      document.getElementById('rcBase').textContent = `₹${fare.base}`;
+      document.getElementById('rcBata').textContent = `₹${fare.bata}`;
+      document.getElementById('rcTotal').textContent = `₹${fare.total.toLocaleString('en-IN')}`;
+
+      // Update map
+      if (rcRouteLayer) rcMap.removeLayer(rcRouteLayer);
+      if (rcPickupMarker) rcMap.removeLayer(rcPickupMarker);
+      if (rcDropMarker) rcMap.removeLayer(rcDropMarker);
+
+      rcRouteLayer = L.geoJSON(route.geometry, {
+        style: { color: '#F5B800', weight: 5, opacity: 0.85 }
+      }).addTo(rcMap);
+
+      rcPickupMarker = L.marker([fromCoord.lat, fromCoord.lon], { icon: goldMarker('pickup') })
+        .bindPopup(`<b>Pickup:</b> ${pickup}`)
+        .addTo(rcMap);
+      rcDropMarker = L.marker([toCoord.lat, toCoord.lon], { icon: goldMarker('drop') })
+        .bindPopup(`<b>Drop:</b> ${drop}`)
+        .addTo(rcMap);
+
+      rcMap.fitBounds(rcRouteLayer.getBounds(), { padding: [30, 30] });
+      setTimeout(() => rcMap.invalidateSize(), 100);
+
+      // Show book button with pre-filled message
+      const bookBtn = document.getElementById('rcBookBtn');
+      const msg = encodeURIComponent(
+        `Hello Sundari Travels,\n\nI would like to book a taxi.\n\nRoute: ${pickup} → ${drop}\nTrip: ${isRoundTrip ? 'Round Trip' : 'One Way'}\nVehicle: ${activeVehicle}\nDistance: ${fare.actualDist} km\nEstimated Total: ₹${fare.total.toLocaleString('en-IN')}\n\nPlease confirm my booking.`
+      );
+      bookBtn.href = `https://wa.me/916385700864?text=${msg}`;
+      bookBtn.style.display = 'flex';
+
+    } catch (err) {
+      alert('Could not calculate route. Please check the location names and try again.\n\nError: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-route"></i> Calculate Route';
+    }
+  }
+
+  // Init when DOM ready
+  document.addEventListener('DOMContentLoaded', function () {
+    // Vehicle tab switching
+    document.querySelectorAll('.rc-vtab').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.rc-vtab').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        activeRate = parseInt(this.dataset.rate);
+        activeBase = parseInt(this.dataset.base);
+        activeBata = parseInt(this.dataset.bata);
+        activeVehicle = this.dataset.vehicle.charAt(0).toUpperCase() + this.dataset.vehicle.slice(1);
+      });
+    });
+
+    // Calculate button
+    const calcBtn = document.getElementById('rcCalcBtn');
+    if (calcBtn) calcBtn.addEventListener('click', calculateRoute);
+
+    // Initialize map when section is visible
+    const section = document.getElementById('route-calculator');
+    if (section) {
+      const obs = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          initRCMap();
+          obs.disconnect();
+        }
+      }, { threshold: 0.1 });
+      obs.observe(section);
+    }
+
+    // Autocomplete for RC inputs
+    function setupRCAutocomplete(inputId, listId) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+      if (!input || !list) return;
+
+      input.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        list.innerHTML = '';
+        if (query.length < 2) { list.style.display = 'none'; return; }
+
+        const matches = LOCATIONS.filter(loc =>
+          loc.a.toLowerCase().includes(query) || loc.c.toLowerCase().includes(query)
+        ).slice(0, 8);
+
+        if (matches.length === 0) { list.style.display = 'none'; return; }
+
+        matches.forEach(loc => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span><strong class="ac-area">${loc.a}</strong><span class="ac-city">${loc.c}, ${loc.s}</span></span>`;
+          li.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            input.value = `${loc.a}, ${loc.c}`;
+            list.innerHTML = '';
+            list.style.display = 'none';
+          });
+          list.appendChild(li);
+        });
+        list.style.display = 'block';
+      });
+
+      input.addEventListener('blur', () => setTimeout(() => { list.style.display = 'none'; }, 200));
+    }
+
+    setupRCAutocomplete('rcPickup', 'rcPickupList');
+    setupRCAutocomplete('rcDrop', 'rcDropList');
+  });
+})();

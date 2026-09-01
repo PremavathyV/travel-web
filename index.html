@@ -20,6 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css?v=15" />
 </head>
 <body>
@@ -39,6 +40,7 @@
       <a href="#about" class="nav-link">About</a>
       <a href="#services" class="nav-link">Services</a>
       <a href="#tariff" class="nav-link">Tariff</a>
+      <a href="#route-calculator" class="nav-link">Route Calc</a>
       <a href="#routes" class="nav-link">Popular Routes</a>
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#contact" class="nav-link">Contact</a>
@@ -778,6 +780,118 @@
   </div>
 </section>
 
+<!-- ===== ROUTE CALCULATOR ===== -->
+<section class="route-calc-section" id="route-calculator">
+  <div class="container">
+    <div class="section-label center">Plan Your Trip</div>
+    <h2 class="section-title center">Route & Fare Calculator</h2>
+    <p class="section-subtitle center">Enter pickup and drop locations to get road distance, estimated time and fare instantly — no signup needed.</p>
+
+    <div class="rc-wrapper">
+      <!-- Left: Inputs + Results -->
+      <div class="rc-left">
+
+        <!-- Vehicle selector -->
+        <div class="rc-vehicle-tabs">
+          <button class="rc-vtab active" data-vehicle="sedan" data-rate="15" data-base="300" data-bata="250">
+            <i class="fas fa-car"></i> Sedan <span>₹15/km</span>
+          </button>
+          <button class="rc-vtab" data-vehicle="suv" data-rate="20" data-base="400" data-bata="300">
+            <i class="fas fa-truck-pickup"></i> SUV <span>₹20/km</span>
+          </button>
+          <button class="rc-vtab" data-vehicle="innova" data-rate="21" data-base="450" data-bata="300">
+            <i class="fas fa-shuttle-van"></i> Innova <span>₹21/km</span>
+          </button>
+        </div>
+
+        <!-- Trip type -->
+        <div class="rc-trip-type">
+          <label class="rc-radio">
+            <input type="radio" name="rcTrip" value="oneway" checked /> One Way
+          </label>
+          <label class="rc-radio">
+            <input type="radio" name="rcTrip" value="roundtrip" /> Round Trip
+          </label>
+        </div>
+
+        <!-- Location inputs -->
+        <div class="rc-input-group">
+          <div class="rc-input-wrap">
+            <span class="rc-dot rc-dot-green"></span>
+            <div class="autocomplete-wrap rc-ac">
+              <input type="text" id="rcPickup" placeholder="Pickup location (city / area)" autocomplete="off" class="rc-input" />
+              <ul class="autocomplete-list" id="rcPickupList"></ul>
+            </div>
+          </div>
+          <div class="rc-connector"></div>
+          <div class="rc-input-wrap">
+            <span class="rc-dot rc-dot-red"></span>
+            <div class="autocomplete-wrap rc-ac">
+              <input type="text" id="rcDrop" placeholder="Drop location (city / area)" autocomplete="off" class="rc-input" />
+              <ul class="autocomplete-list" id="rcDropList"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculate button -->
+        <button class="rc-calc-btn" id="rcCalcBtn">
+          <i class="fas fa-route"></i> Calculate Route
+        </button>
+
+        <!-- Results -->
+        <div class="rc-results" id="rcResults">
+          <div class="rc-dist-time">
+            <div class="rc-dt-box">
+              <span class="rc-dt-label">Road Distance</span>
+              <span class="rc-dt-val" id="rcDistance">-- km</span>
+            </div>
+            <div class="rc-dt-box">
+              <span class="rc-dt-label">Estimated Time</span>
+              <span class="rc-dt-val" id="rcTime">--</span>
+            </div>
+          </div>
+          <div class="rc-fare-grid">
+            <div class="rc-fare-item">
+              <span class="rc-fare-label">Rate / Km</span>
+              <span class="rc-fare-val" id="rcRate">₹0/km</span>
+            </div>
+            <div class="rc-fare-item">
+              <span class="rc-fare-label">Base Fare</span>
+              <span class="rc-fare-val" id="rcBase">₹0</span>
+            </div>
+            <div class="rc-fare-item">
+              <span class="rc-fare-label">Driver Bata</span>
+              <span class="rc-fare-val" id="rcBata">₹0</span>
+            </div>
+            <div class="rc-fare-item rc-total">
+              <span class="rc-fare-label">Estimated Total</span>
+              <span class="rc-fare-val rc-total-val" id="rcTotal">₹0</span>
+            </div>
+          </div>
+          <div class="rc-fare-note">
+            <i class="fas fa-info-circle"></i>
+            Toll, parking &amp; state permit extra. Final fare confirmed at booking.
+          </div>
+          <!-- Book CTA after result -->
+          <a href="#booking" class="rc-book-btn" id="rcBookBtn" style="display:none;">
+            <i class="fas fa-taxi"></i> Book This Route via WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Map -->
+      <div class="rc-right">
+        <div class="rc-map-header">
+          <i class="fas fa-map-marked-alt"></i> Your Route
+          <small>Exact location • Road route</small>
+          <span class="rc-map-badge">OpenStreetMap</span>
+        </div>
+        <div id="rcMap" class="rc-map"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ===== HOW IT WORKS ===== -->
 <section class="how-section" id="how-it-works">
   <div class="container">
@@ -1016,6 +1130,7 @@
 <!-- Success Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="main.js?v=15"></script>
 </body>
 </html>
