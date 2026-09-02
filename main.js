@@ -782,38 +782,61 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     });
   }
 
-  /* FAST: Distance Matrix — returns km + duration only, no polyline */
+  /* FAST: Distance Matrix with 10s timeout guard */
   function getDistanceMatrix(pickup, drop) {
     return new Promise((resolve, reject) => {
-      new google.maps.DistanceMatrixService().getDistanceMatrix({
-        origins: [pickup],
-        destinations: [drop],
-        travelMode: google.maps.TravelMode.DRIVING,
-        unitSystem: google.maps.UnitSystem.METRIC,
-        region: 'IN'
-      }, (res, status) => {
-        if (status === 'OK') {
-          const el = res.rows[0].elements[0];
-          if (el.status === 'OK') {
-            resolve({
-              km: el.distance.value / 1000,
-              min: Math.round(el.duration.value / 60)
-            });
+      let settled = false;
+
+      // Safety timeout — if Google never calls back, reject after 10s
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          reject(new Error('Calculation timed out. Please check your internet connection and try again.'));
+        }
+      }, 10000);
+
+      try {
+        new google.maps.DistanceMatrixService().getDistanceMatrix({
+          origins: [pickup],
+          destinations: [drop],
+          travelMode: google.maps.TravelMode.DRIVING,
+          unitSystem: google.maps.UnitSystem.METRIC,
+          region: 'IN'
+        }, (res, status) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+
+          if (status === 'OK') {
+            const el = res.rows[0].elements[0];
+            if (el.status === 'OK') {
+              resolve({
+                km: el.distance.value / 1000,
+                min: Math.round(el.duration.value / 60)
+              });
+            } else {
+              reject(new Error(
+                el.status === 'NOT_FOUND'   ? 'Location not found. Please type and select a location from the dropdown suggestions.' :
+                el.status === 'ZERO_RESULTS'? 'No driving route found between these locations.' :
+                'Could not calculate distance (' + el.status + '). Please select locations from suggestions.'
+              ));
+            }
           } else {
             reject(new Error(
-              el.status === 'NOT_FOUND' ? 'One or both locations could not be found. Please select from the suggestions.' :
-              el.status === 'ZERO_RESULTS' ? 'No driving route found between these locations.' :
-              'Could not calculate distance: ' + el.status
+              status === 'REQUEST_DENIED'  ? 'Maps API request denied. Please check your API key restrictions.' :
+              status === 'OVER_QUERY_LIMIT'? 'Too many requests. Please try again in a moment.' :
+              status === 'INVALID_REQUEST' ? 'Invalid locations. Please select from the dropdown suggestions.' :
+              'Distance calculation failed: ' + status
             ));
           }
-        } else {
-          reject(new Error(
-            status === 'REQUEST_DENIED' ? 'Maps request denied. Please check your connection.' :
-            status === 'OVER_QUERY_LIMIT' ? 'Too many requests. Please try again in a moment.' :
-            'Distance calculation failed: ' + status
-          ));
+        });
+      } catch (e) {
+        clearTimeout(timer);
+        if (!settled) {
+          settled = true;
+          reject(new Error('Google Maps is not ready. Please refresh the page and try again.'));
         }
-      });
+      }
     });
   }
 
@@ -861,7 +884,7 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
       showToast('Please select a vehicle type first.', 'error');
       return;
     }
-    if (!window.google || !google.maps) {
+    if (!window.google || !google.maps || !google.maps.DistanceMatrixService) {
       showToast('Google Maps is still loading. Please wait a moment and try again.', 'error');
       return;
     }
