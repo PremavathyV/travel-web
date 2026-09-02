@@ -172,7 +172,7 @@ section { position: relative; }
   padding: 0 70px;
   display: flex;
   align-items: center;
-  height: 96px;
+  height: 108px;
   gap: 0;
 }
 .nav-logo {
@@ -185,14 +185,14 @@ section { position: relative; }
 }
 .logo-img {
   width: auto;
-  height: 80px;
+  height: 108px;
   max-width: 220px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
   background: transparent;
 }
-.navbar.scrolled .logo-img { height: 68px; }
+.navbar.scrolled .logo-img { height: 78px; }
 .logo-text-fallback { display: none; }
 .nav-links {
   display: flex;
@@ -1237,8 +1237,8 @@ section { position: relative; }
 }
 @media (max-width: 640px) {
   .nav-container { padding: 0 20px; }
-  .logo-img { height: 58px; width: auto; }
-  .navbar.scrolled .logo-img { height: 48px; }
+  .logo-img { height: 72px; width: auto; }
+  .navbar.scrolled .logo-img { height: 60px; }
   .nav-book-btn { width: 100px !important; font-size: 0.78rem !important; height: 40px !important; border-radius: 8px !important; }
   .nav-phone-btn { width: 36px !important; height: 36px !important; font-size: 0.8rem !important; }
   .section-title { font-size: 1.85rem; }
