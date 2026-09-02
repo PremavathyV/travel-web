@@ -738,15 +738,14 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
    ===================================================== */
 (function () {
   const BATA = 400;
-  // Google Maps state
   let bfMap = null, bfDirectionsRenderer = null, bfPickupMarker = null, bfDropMarker = null;
 
   function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
 
-  /* Lazy-init Google Map in the #bfMap container */
+  /* Lazy-init Google Map */
   function initBFMap() {
     if (bfMap) return;
-    if (!window.google || !google.maps) { return; }
+    if (!window.google || !google.maps) return;
     bfMap = new google.maps.Map(document.getElementById('bfMap'), {
       zoom: 6,
       center: { lat: 11.0, lng: 78.5 },
@@ -772,64 +771,81 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     bfDirectionsRenderer.setMap(bfMap);
   }
 
-  /* Place a styled marker on the map */
   function mkMarker(pos, color, label) {
     return new google.maps.Marker({
-      position: pos,
-      map: bfMap,
-      title: label,
+      position: pos, map: bfMap, title: label,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 9,
-        fillColor: color,
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2
+        scale: 9, fillColor: color, fillOpacity: 1,
+        strokeColor: '#ffffff', strokeWeight: 2
       }
     });
   }
 
-  /* Core: get route via Google Directions Service */
-  function getGoogleRoute(pickup, drop) {
+  /* FAST: Distance Matrix — returns km + duration only, no polyline */
+  function getDistanceMatrix(pickup, drop) {
     return new Promise((resolve, reject) => {
-      if (!window.google || !google.maps || !google.maps.DirectionsService) {
-        reject(new Error('Google Maps not loaded. Please refresh and try again.'));
-        return;
-      }
-      new google.maps.DirectionsService().route({
-        origin: pickup,
-        destination: drop,
+      new google.maps.DistanceMatrixService().getDistanceMatrix({
+        origins: [pickup],
+        destinations: [drop],
         travelMode: google.maps.TravelMode.DRIVING,
-        region: 'IN',
-        provideRouteAlternatives: false
-      }, (result, status) => {
-        if (status === google.maps.DirectionsStatus.OK) {
-          const leg = result.routes[0].legs[0];
-          resolve({
-            km: (leg.distance.value / 1000),
-            min: Math.round(leg.duration.value / 60),
-            pickupLatLng: leg.start_location,
-            dropLatLng: leg.end_location,
-            dirResult: result
-          });
+        unitSystem: google.maps.UnitSystem.METRIC,
+        region: 'IN'
+      }, (res, status) => {
+        if (status === 'OK') {
+          const el = res.rows[0].elements[0];
+          if (el.status === 'OK') {
+            resolve({
+              km: el.distance.value / 1000,
+              min: Math.round(el.duration.value / 60)
+            });
+          } else {
+            reject(new Error(
+              el.status === 'NOT_FOUND' ? 'One or both locations could not be found. Please select from the suggestions.' :
+              el.status === 'ZERO_RESULTS' ? 'No driving route found between these locations.' :
+              'Could not calculate distance: ' + el.status
+            ));
+          }
         } else {
-          const msgs = {
-            NOT_FOUND: 'One or both locations could not be found. Please select a valid location from the suggestions.',
-            ZERO_RESULTS: 'No driving route found between these locations.',
-            MAX_WAYPOINTS_EXCEEDED: 'Too many waypoints.',
-            INVALID_REQUEST: 'Invalid route request. Please check your pickup and drop locations.',
-            OVER_DAILY_LIMIT: 'API usage limit reached. Please try again later.',
-            OVER_QUERY_LIMIT: 'Too many requests. Please try again in a moment.',
-            REQUEST_DENIED: 'Route request was denied. Please check your connection.',
-            UNKNOWN_ERROR: 'An unknown error occurred while calculating the route. Please try again.'
-          };
-          reject(new Error(msgs[status] || 'Route calculation failed: ' + status));
+          reject(new Error(
+            status === 'REQUEST_DENIED' ? 'Maps request denied. Please check your connection.' :
+            status === 'OVER_QUERY_LIMIT' ? 'Too many requests. Please try again in a moment.' :
+            'Distance calculation failed: ' + status
+          ));
         }
       });
     });
   }
 
-  /* Main fare calculation handler */
+  /* BACKGROUND: Draw route on map after fare is already shown */
+  function drawRouteAsync(pickup, drop) {
+    if (!bfMap) return;
+    new google.maps.DirectionsService().route({
+      origin: pickup,
+      destination: drop,
+      travelMode: google.maps.TravelMode.DRIVING,
+      region: 'IN',
+      provideRouteAlternatives: false
+    }, (result, status) => {
+      if (status !== google.maps.DirectionsStatus.OK || !bfMap) return;
+      const leg = result.routes[0].legs[0];
+
+      if (bfPickupMarker) { bfPickupMarker.setMap(null); bfPickupMarker = null; }
+      if (bfDropMarker)   { bfDropMarker.setMap(null);   bfDropMarker   = null; }
+
+      bfDirectionsRenderer.setDirections(result);
+      bfPickupMarker = mkMarker(leg.start_location, '#22c55e', 'Pickup: ' + pickup);
+      bfDropMarker   = mkMarker(leg.end_location,   '#ef4444', 'Drop: '   + drop);
+
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(leg.start_location);
+      bounds.extend(leg.end_location);
+      bfMap.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+      setTimeout(() => { if (bfMap) google.maps.event.trigger(bfMap, 'resize'); }, 200);
+    });
+  }
+
+  /* Main fare calculation — fare shows instantly, map draws in background */
   async function calcBFFare() {
     const pickup  = document.getElementById('pickupLoc').value.trim();
     const drop    = document.getElementById('dropLoc').value.trim();
@@ -855,50 +871,28 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
 
     try {
-      const route = await getGoogleRoute(pickup, drop);
+      /* --- STEP 1: Fast distance fetch (shows fare immediately) --- */
+      const dist = await getDistanceMatrix(pickup, drop);
 
-      // Fare calculation — unchanged business logic
       let vRate = 15;
-      if (vehicle.includes('suv'))    vRate = 20;
+      if (vehicle.includes('suv'))         vRate = 20;
       else if (vehicle.includes('innova')) vRate = 21;
 
-      const oneWayKm  = route.km;
+      const oneWayKm   = dist.km;
       const actualDist = isRT ? oneWayKm * 2 : oneWayKm;
-      const baseFare  = Math.max(Math.round(actualDist * vRate), vRate * 10);
-      const total     = baseFare + BATA;
+      const baseFare   = Math.max(Math.round(actualDist * vRate), vRate * 10);
+      const total      = baseFare + BATA;
 
-      // Update fare display elements
-      document.getElementById('bfDistance').textContent = actualDist.toFixed(1) + ' km';
-      document.getElementById('bfRate').textContent     = inr(vRate) + '/km';
-      document.getElementById('bfBase').textContent     = inr(baseFare);
-      document.getElementById('bfBata').textContent     = inr(BATA);
-      document.getElementById('bfTotal').textContent    = inr(total);
+      document.getElementById('bfDistance').textContent  = actualDist.toFixed(1) + ' km';
+      document.getElementById('bfRate').textContent      = inr(vRate) + '/km';
+      document.getElementById('bfBase').textContent      = inr(baseFare);
+      document.getElementById('bfBata').textContent      = inr(BATA);
+      document.getElementById('bfTotal').textContent     = inr(total);
       document.getElementById('bfFareCard').style.display = 'block';
 
-      // Render map with route
+      /* --- STEP 2: Draw map route in background (non-blocking) --- */
       initBFMap();
-      if (!bfMap) { return; } // Google Maps not ready yet — fare is still shown
-
-      // Clear old markers / route
-      if (bfPickupMarker) { bfPickupMarker.setMap(null); bfPickupMarker = null; }
-      if (bfDropMarker)   { bfDropMarker.setMap(null);   bfDropMarker   = null; }
-
-      // Draw route polyline
-      bfDirectionsRenderer.setDirections(route.dirResult);
-
-      // Add custom markers
-      bfPickupMarker = mkMarker(route.pickupLatLng, '#22c55e', 'Pickup: ' + pickup);
-      bfDropMarker   = mkMarker(route.dropLatLng,   '#ef4444', 'Drop: ' + drop);
-
-      // Fit map to route bounds
-      const bounds = new google.maps.LatLngBounds();
-      bounds.extend(route.pickupLatLng);
-      bounds.extend(route.dropLatLng);
-      bfMap.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
-
-      setTimeout(() => {
-        if (bfMap) google.maps.event.trigger(bfMap, 'resize');
-      }, 200);
+      if (bfMap) drawRouteAsync(pickup, drop);
 
     } catch (err) {
       showToast(err.message || 'Could not calculate the route. Please try again.', 'error');
@@ -926,7 +920,6 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     });
   });
 })();
-
 
 /* =====================================================
    GOOGLE PLACES AUTOCOMPLETE
