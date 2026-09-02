@@ -1719,3 +1719,34 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 .bf-map-wrap { border-radius: 10px; overflow: hidden; border: 1px solid var(--gold-border); }
 .bf-map { height: 280px; width: 100%; background: #1a1c20; }
+
+/* ---- Google Places Autocomplete Dark Theme ---- */
+.pac-container {
+  background: #151820 !important;
+  border: 1px solid rgba(245,184,0,0.30) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
+  font-family: 'Manrope', sans-serif !important;
+  margin-top: 4px !important;
+  z-index: 99999 !important;
+}
+.pac-item {
+  background: #151820 !important;
+  color: #D9DCE2 !important;
+  border-top: 1px solid rgba(255,255,255,0.05) !important;
+  padding: 10px 14px !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+}
+.pac-item:hover, .pac-item-selected {
+  background: rgba(245,184,0,0.08) !important;
+}
+.pac-item-query {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+}
+.pac-matched { color: #F5B800 !important; font-weight: 700 !important; }
+.pac-icon { display: none !important; }
+.pac-logo::after { display: none !important; }
+.pac-logo { padding: 4px 10px !important; }

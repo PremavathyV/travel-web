@@ -869,3 +869,146 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     document.querySelectorAll('input[name="tripType"]').forEach(r=>{r.addEventListener('change',function(){const card=document.getElementById('bfFareCard');if(card&&card.style.display!=='none')calcBFFare();});});
   });
 })();
+
+
+/* =====================================================
+   GOOGLE PLACES AUTOCOMPLETE + DISTANCE MATRIX
+   ===================================================== */
+const GOOGLE_API_KEY = 'AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE';
+
+// Called by Google Maps script callback
+function initGoogleMaps() {
+  setupGoogleAC('pickupLoc');
+  setupGoogleAC('dropLoc');
+  setupGoogleAC('rcPickup');
+  setupGoogleAC('rcDrop');
+}
+
+function setupGoogleAC(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || !window.google || !window.google.maps) return;
+
+  const options = {
+    componentRestrictions: { country: 'in' },
+    types: ['geocode', 'establishment']
+  };
+
+  const autocomplete = new google.maps.places.Autocomplete(input, options);
+  autocomplete.setFields(['formatted_address', 'geometry', 'name']);
+
+  // Style the Google autocomplete dropdown to match dark theme
+  input.addEventListener('focus', () => {
+    const pac = document.querySelector('.pac-container');
+    if (pac) {
+      pac.style.background = '#151820';
+      pac.style.border = '1px solid rgba(245,184,0,0.3)';
+      pac.style.borderRadius = '8px';
+    }
+  });
+}
+
+// Get driving distance using Google Distance Matrix API
+async function getGoogleDistance(origin, destination) {
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=driving&key=${GOOGLE_API_KEY}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
+      const el = data.rows[0].elements[0];
+      return {
+        km: (el.distance.value / 1000).toFixed(1),
+        min: Math.round(el.duration.value / 60),
+        text: el.distance.text
+      };
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Override bfGetRoute to use Google Distance Matrix when available
+const _origBfGetRoute = typeof bfGetRoute !== 'undefined' ? bfGetRoute : null;
+
+// Patch the booking form fare calculator to use Google Distance
+document.addEventListener('DOMContentLoaded', function () {
+  const calcBtn = document.getElementById('bfCalcBtn');
+  if (!calcBtn) return;
+
+  // Replace the click handler with Google-enhanced version
+  calcBtn.replaceWith(calcBtn.cloneNode(true)); // remove old listener
+  const newBtn = document.getElementById('bfCalcBtn');
+  if (!newBtn) return;
+
+  newBtn.addEventListener('click', async function () {
+    const pickup  = document.getElementById('pickupLoc').value.trim();
+    const drop    = document.getElementById('dropLoc').value.trim();
+    const vehicle = document.getElementById('vehicleType').value.toLowerCase();
+    const tripRaw = document.querySelector('input[name="tripType"]:checked');
+    const isRT    = tripRaw && tripRaw.value === 'Round Trip';
+
+    if (!pickup || !drop) { alert('Please enter Pickup and Drop locations first.'); return; }
+    if (!vehicle) { alert('Please select a vehicle type first.'); return; }
+
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+
+    try {
+      const RATES = { sedan: 15, suv: 20, innova: 21 };
+      const BATA  = 250;
+      let vRate = 15;
+      if (vehicle.includes('suv')) vRate = 20;
+      else if (vehicle.includes('innova')) vRate = 21;
+
+      // Try Google Distance Matrix first
+      let km, durationMin;
+      const googleResult = await getGoogleDistance(pickup, drop);
+
+      if (googleResult) {
+        km = parseFloat(googleResult.km);
+        durationMin = googleResult.min;
+      } else {
+        // Fallback to OSRM
+        const pickupEnc = encodeURIComponent(pickup + ', India');
+        const dropEnc   = encodeURIComponent(drop + ', India');
+        const geoA = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${pickupEnc}&limit=1`).then(r=>r.json());
+        const geoB = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${dropEnc}&limit=1`).then(r=>r.json());
+        if (!geoA.length || !geoB.length) throw new Error('Location not found');
+        const a = { lat: parseFloat(geoA[0].lat), lon: parseFloat(geoA[0].lon) };
+        const b = { lat: parseFloat(geoB[0].lat), lon: parseFloat(geoB[0].lon) };
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`;
+        const osrm = await fetch(osrmUrl).then(r=>r.json());
+        if (osrm.routes && osrm.routes.length) {
+          km = (osrm.routes[0].distance / 1000);
+          durationMin = Math.round(osrm.routes[0].duration / 60);
+        } else {
+          // Haversine
+          const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lon-a.lon)*Math.PI/180;
+          const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+          km = R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))*1.3;
+          durationMin = Math.round(km/55*60);
+        }
+      }
+
+      const actualDist = isRT ? km * 2 : km;
+      const baseFare   = Math.round(actualDist * vRate);
+      const total      = baseFare + BATA;
+
+      const fmtDur = (m) => { const h=Math.floor(m/60),r=m%60; return h?`${h}h ${r?r+'m':''}`.trim():`${r}m`; };
+      const inrFmt = (n) => '\u20B9' + Math.round(n).toLocaleString('en-IN');
+
+      document.getElementById('bfDistance').textContent = actualDist.toFixed(1) + ' km';
+      document.getElementById('bfDuration').textContent = fmtDur(durationMin * (isRT ? 2 : 1));
+      document.getElementById('bfRate').textContent  = inrFmt(vRate) + '/km';
+      document.getElementById('bfBase').textContent  = inrFmt(baseFare);
+      document.getElementById('bfBata').textContent  = inrFmt(BATA);
+      document.getElementById('bfTotal').textContent = inrFmt(total);
+      document.getElementById('bfFareCard').style.display = 'block';
+
+    } catch (err) {
+      alert('Could not calculate distance.\n' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-route"></i> Calculate Distance &amp; Fare';
+    }
+  });
+});
