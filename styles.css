@@ -294,7 +294,7 @@ section { position: relative; }
   z-index: 999;
   transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
   overflow-y: auto;
-  padding: 80px 24px 40px;
+  padding: 96px 24px 40px;
 }
 .mobile-nav.open { right: 0; }
 .mobile-nav-link {
@@ -339,7 +339,7 @@ section { position: relative; }
   flex-direction: column;
   background: #080A0E;
   overflow: hidden;
-  padding-top: 96px;
+  padding-top: 108px;
 }
 
 /* car.png — right side, blended background */
@@ -409,7 +409,7 @@ section { position: relative; }
   width: 100%;
   margin: 0 auto;
   padding: 44px 70px 155px;
-  min-height: calc(82vh - 96px);
+  min-height: calc(82vh - 108px);
 }
 .hero-right-spacer { display: block; }
 
