@@ -249,7 +249,18 @@ Pickup: ${pickup}
 Drop: ${drop}
 Date: ${dateFormatted}
 Time: ${timeFormatted}
-Vehicle: ${vehicle}${message ? '\nMessage: ' + message : ''}
+Vehicle: ${vehicle}${(() => {
+  const distEl = document.getElementById('bfDistance');
+  const totalEl = document.getElementById('bfTotal');
+  const rateEl = document.getElementById('bfRate');
+  const baseEl = document.getElementById('bfBase');
+  const bataEl = document.getElementById('bfBata');
+  const fareCard = document.getElementById('bfFareCard');
+  if (fareCard && fareCard.style.display !== 'none' && distEl && distEl.textContent !== '--') {
+    return `\nDistance: ${distEl.textContent}\nRate/km: ${rateEl ? rateEl.textContent : ''}\nBase Fare: ${baseEl ? baseEl.textContent : ''}\nDriver Bata: ${bataEl ? bataEl.textContent : ''}\nEstimated Total: ${totalEl ? totalEl.textContent : ''}`;
+  }
+  return '';
+})()}${message ? '\nMessage: ' + message : ''}
 
 Please confirm my booking.`;
 
