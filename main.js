@@ -880,50 +880,61 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
    ===================================================== */
 const GOOGLE_API_KEY = 'AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE';
 
+// Map to store geocoded coordinates for faster calculation
+const geocodeCache = {};
+
 // Called by Google Maps script callback
 function initGoogleMaps() {
-  setupGoogleAC('pickupLoc');
-  setupGoogleAC('dropLoc');
-  setupGoogleAC('rcPickup');
-  setupGoogleAC('rcDrop');
+  const pairs = [
+    ['pickupLoc', 'pickupList'],
+    ['dropLoc',   'dropList'],
+    ['rcPickup',  'rcPickupList'],
+    ['rcDrop',    'rcDropList']
+  ];
+  pairs.forEach(([inputId, listId]) => setupGoogleAC(inputId, listId));
 }
 
-function setupGoogleAC(inputId) {
+function setupGoogleAC(inputId, listId) {
   const input = document.getElementById(inputId);
-  if (!input) return;
+  const list  = document.getElementById(listId);
+  if (!input || !list) return;
+
+  // Remove any old listeners by cloning
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+  const inp = newInput;
 
   let timer = null;
-  let acList = document.createElement('ul');
-  acList.className = 'autocomplete-list';
-  acList.id = inputId + '_combined_list';
-  input.parentNode.style.position = 'relative';
-  input.parentNode.appendChild(acList);
 
-  function closeList() { acList.classList.remove('show'); acList.innerHTML = ''; }
+  function closeList() { list.classList.remove('show'); list.innerHTML = ''; }
 
   function renderItems(items) {
-    acList.innerHTML = '';
+    list.innerHTML = '';
     if (!items.length) { closeList(); return; }
     items.forEach(item => {
       const li = document.createElement('li');
       li.innerHTML = `<i class="fas fa-map-marker-alt"></i><span><strong class="ac-area">${item.main}</strong><span class="ac-city">${item.sub || ''}</span></span>`;
       li.addEventListener('mousedown', e => {
         e.preventDefault();
-        input.value = item.value;
+        inp.value = item.value;
+        // Cache geocoords if available
+        if (item.lat && item.lon) {
+          geocodeCache[item.value] = { lat: item.lat, lon: item.lon };
+        }
         closeList();
       });
-      acList.appendChild(li);
+      list.appendChild(li);
     });
-    acList.classList.add('show');
+    list.classList.add('show');
   }
 
-  input.addEventListener('input', function () {
+  inp.addEventListener('input', function () {
     clearTimeout(timer);
     const q = this.value.trim();
     if (q.length < 2) { closeList(); return; }
     const lower = q.toLowerCase();
 
-    // Local LOCATIONS first — instant
+    // 1. Local LOCATIONS — instant, no network
     const local = LOCATIONS.filter(l =>
       l.a.toLowerCase().includes(lower) || l.c.toLowerCase().includes(lower)
     ).slice(0, 5).map(l => ({
@@ -934,8 +945,9 @@ function setupGoogleAC(inputId) {
 
     if (local.length) renderItems(local);
 
-    // Google Places — additional results
-    if (window.google && window.google.maps && window.google.maps.places) {
+    // 2. Google Places after 300ms debounce — more results
+    timer = setTimeout(() => {
+      if (!window.google || !window.google.maps || !window.google.maps.places) return;
       const svc = new google.maps.places.AutocompleteService();
       svc.getPlacePredictions(
         { input: q, componentRestrictions: { country: 'in' }, language: 'en' },
@@ -946,7 +958,6 @@ function setupGoogleAC(inputId) {
             sub: p.structured_formatting.secondary_text || '',
             value: p.description
           }));
-          // Merge: local on top, google below, deduplicate
           const seen = new Set(local.map(i => i.main.toLowerCase()));
           const merged = [...local];
           googleItems.forEach(g => {
@@ -958,12 +969,12 @@ function setupGoogleAC(inputId) {
           renderItems(merged.slice(0, 10));
         }
       );
-    }
+    }, 300);
   });
 
-  input.addEventListener('blur', () => setTimeout(closeList, 200));
+  inp.addEventListener('blur', () => setTimeout(closeList, 200));
   document.addEventListener('click', e => {
-    if (!input.contains(e.target) && !acList.contains(e.target)) closeList();
+    if (!inp.contains(e.target) && !list.contains(e.target)) closeList();
   });
 }
 
@@ -1038,14 +1049,30 @@ document.addEventListener('DOMContentLoaded', function () {
         durationMin = googleResult.min;
       } else {
         // Fallback: Nominatim geocode + OSRM road routing
-        const geoA = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup + ', India')}&limit=1`).then(r=>r.json());
-        const geoB = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop + ', India')}&limit=1`).then(r=>r.json());
+        // Check cache first for speed, run both in parallel
+        let a = geocodeCache[pickup];
+        let b = geocodeCache[drop];
 
-        if (!geoA.length) throw new Error(`Could not find pickup: "${pickup}"`);
-        if (!geoB.length) throw new Error(`Could not find drop: "${drop}"`);
+        if (!a || !b) {
+          const promises = [];
+          if (!a) promises.push(fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup + ', India')}&limit=1`).then(r=>r.json()));
+          else promises.push(Promise.resolve(null));
+          if (!b) promises.push(fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop + ', India')}&limit=1`).then(r=>r.json()));
+          else promises.push(Promise.resolve(null));
 
-        const a = { lat: parseFloat(geoA[0].lat), lon: parseFloat(geoA[0].lon) };
-        const b = { lat: parseFloat(geoB[0].lat), lon: parseFloat(geoB[0].lon) };
+          const [geoA, geoB] = await Promise.all(promises);
+
+          if (!a) {
+            if (!geoA || !geoA.length) throw new Error(`Could not find pickup: "${pickup}"`);
+            a = { lat: parseFloat(geoA[0].lat), lon: parseFloat(geoA[0].lon) };
+            geocodeCache[pickup] = a;
+          }
+          if (!b) {
+            if (!geoB || !geoB.length) throw new Error(`Could not find drop: "${drop}"`);
+            b = { lat: parseFloat(geoB[0].lat), lon: parseFloat(geoB[0].lon) };
+            geocodeCache[drop] = b;
+          }
+        }
 
         // Try OSRM road routing (actual road distance)
         let osrmOk = false;
