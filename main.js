@@ -879,248 +879,162 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
    GOOGLE PLACES AUTOCOMPLETE + DISTANCE MATRIX
    ===================================================== */
 const GOOGLE_API_KEY = 'AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE';
-
-// Map to store geocoded coordinates for faster calculation
 const geocodeCache = {};
 
-// Called by Google Maps script callback
 function initGoogleMaps() {
-  const pairs = [
-    ['pickupLoc', 'pickupList'],
-    ['dropLoc',   'dropList'],
-    ['rcPickup',  'rcPickupList'],
-    ['rcDrop',    'rcDropList']
-  ];
-  pairs.forEach(([inputId, listId]) => setupGoogleAC(inputId, listId));
+  [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']].forEach(([id,lid])=>setupGoogleAC(id,lid));
 }
 
 function setupGoogleAC(inputId, listId) {
   const input = document.getElementById(inputId);
   const list  = document.getElementById(listId);
-  if (!input || !list) return;
-
-  // Remove any old listeners by cloning
-  const newInput = input.cloneNode(true);
-  input.parentNode.replaceChild(newInput, input);
-  const inp = newInput;
-
+  if (!input || !list || input.dataset.gac) return;
+  input.dataset.gac = '1';
   let timer = null;
 
-  function closeList() { list.classList.remove('show'); list.innerHTML = ''; }
-
-  function renderItems(items) {
+  function closeL() { list.classList.remove('show'); list.innerHTML = ''; }
+  function renderL(items) {
     list.innerHTML = '';
-    if (!items.length) { closeList(); return; }
-    items.forEach(item => {
+    if (!items.length) { closeL(); return; }
+    items.slice(0,10).forEach(it => {
       const li = document.createElement('li');
-      li.innerHTML = `<i class="fas fa-map-marker-alt"></i><span><strong class="ac-area">${item.main}</strong><span class="ac-city">${item.sub || ''}</span></span>`;
+      li.innerHTML = `<i class="fas fa-map-marker-alt"></i><span><strong class="ac-area">${it.main}</strong><span class="ac-city">${it.sub||''}</span></span>`;
       li.addEventListener('mousedown', e => {
         e.preventDefault();
-        inp.value = item.value;
-        // Cache geocoords if available
-        if (item.lat && item.lon) {
-          geocodeCache[item.value] = { lat: item.lat, lon: item.lon };
-        }
-        closeList();
+        input.value = it.value;
+        input.classList.remove('error');
+        const err = document.getElementById(inputId+'Err');
+        if (err) err.textContent = '';
+        closeL();
       });
       list.appendChild(li);
     });
     list.classList.add('show');
   }
 
-  inp.addEventListener('input', function () {
+  input.addEventListener('input', function() {
     clearTimeout(timer);
-    const q = this.value.trim();
-    if (q.length < 2) { closeList(); return; }
-    const lower = q.toLowerCase();
-
-    // 1. Local LOCATIONS — instant, no network
-    const local = LOCATIONS.filter(l =>
-      l.a.toLowerCase().includes(lower) || l.c.toLowerCase().includes(lower)
-    ).slice(0, 5).map(l => ({
-      main: l.a,
-      sub: `${l.c}, ${l.s}`,
-      value: `${l.a}, ${l.c}`
-    }));
-
-    if (local.length) renderItems(local);
-
-    // 2. Google Places after 300ms debounce — more results
-    timer = setTimeout(() => {
-      if (!window.google || !window.google.maps || !window.google.maps.places) return;
-      const svc = new google.maps.places.AutocompleteService();
-      svc.getPlacePredictions(
-        { input: q, componentRestrictions: { country: 'in' }, language: 'en' },
-        (predictions, status) => {
-          if (status !== 'OK' || !predictions) return;
-          const googleItems = predictions.map(p => ({
-            main: p.structured_formatting.main_text,
-            sub: p.structured_formatting.secondary_text || '',
-            value: p.description
-          }));
-          const seen = new Set(local.map(i => i.main.toLowerCase()));
-          const merged = [...local];
-          googleItems.forEach(g => {
-            if (!seen.has(g.main.toLowerCase())) {
-              seen.add(g.main.toLowerCase());
-              merged.push(g);
-            }
-          });
-          renderItems(merged.slice(0, 10));
+    const q = this.value.trim(), lower = q.toLowerCase();
+    if (q.length < 2) { closeL(); return; }
+    const local = LOCATIONS.filter(l=>l.a.toLowerCase().includes(lower)||l.c.toLowerCase().includes(lower))
+      .sort((a,b)=>(a.a.toLowerCase().startsWith(lower)?0:1)-(b.a.toLowerCase().startsWith(lower)?0:1))
+      .slice(0,6).map(l=>({main:l.a,sub:`${l.c}, ${l.s}`,value:`${l.a}, ${l.c}`}));
+    renderL(local);
+    timer = setTimeout(()=>{
+      if (!window.google||!google.maps||!google.maps.places) return;
+      new google.maps.places.AutocompleteService().getPlacePredictions(
+        {input:q,componentRestrictions:{country:'in'},language:'en'},
+        (preds,status)=>{
+          if (status!==google.maps.places.PlacesServiceStatus.OK||!preds) return;
+          const seen=new Set(local.map(i=>i.main.toLowerCase())),merged=[...local];
+          preds.forEach(p=>{const m=p.structured_formatting.main_text;if(!seen.has(m.toLowerCase())){seen.add(m.toLowerCase());merged.push({main:m,sub:p.structured_formatting.secondary_text||'',value:p.description});}});
+          renderL(merged);
         }
       );
-    }, 300);
+    }, 350);
   });
-
-  inp.addEventListener('blur', () => setTimeout(closeList, 200));
-  document.addEventListener('click', e => {
-    if (!inp.contains(e.target) && !list.contains(e.target)) closeList();
-  });
+  input.addEventListener('blur', ()=>setTimeout(closeL,200));
+  document.addEventListener('click', e=>{ if(!input.contains(e.target)&&!list.contains(e.target)) closeL(); });
 }
 
-// Get driving distance using Google Distance Matrix JavaScript Service (browser-safe)
+// Google Distance Matrix (browser JS service)
 async function getGoogleDistance(origin, destination) {
-  return new Promise((resolve) => {
-    if (!window.google || !window.google.maps || !window.google.maps.DistanceMatrixService) {
-      resolve(null);
-      return;
-    }
-    const svc = new google.maps.DistanceMatrixService();
-    svc.getDistanceMatrix({
-      origins: [origin],
-      destinations: [destination],
-      travelMode: google.maps.TravelMode.DRIVING,
-      unitSystem: google.maps.UnitSystem.METRIC,
-      region: 'in'
-    }, (response, status) => {
-      if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
-        const el = response.rows[0].elements[0];
-        resolve({
-          km: (el.distance.value / 1000).toFixed(1),
-          min: Math.round(el.duration.value / 60)
-        });
-      } else {
-        resolve(null);
+  return new Promise(resolve => {
+    if (!window.google||!google.maps||!google.maps.DistanceMatrixService) { resolve(null); return; }
+    new google.maps.DistanceMatrixService().getDistanceMatrix(
+      {origins:[origin],destinations:[destination],travelMode:google.maps.TravelMode.DRIVING,unitSystem:google.maps.UnitSystem.METRIC,region:'in'},
+      (res,status) => {
+        if (status==='OK'&&res.rows[0].elements[0].status==='OK') {
+          const el=res.rows[0].elements[0];
+          resolve({km:(el.distance.value/1000).toFixed(1),min:Math.round(el.duration.value/60)});
+        } else resolve(null);
       }
-    });
+    );
   });
 }
 
 // Override bfGetRoute to use Google Distance Matrix when available
 const _origBfGetRoute = typeof bfGetRoute !== 'undefined' ? bfGetRoute : null;
 
-// Patch the booking form fare calculator to use Google Distance
-document.addEventListener('DOMContentLoaded', function () {
+// Booking form fare calculator (attached after DOM ready)
+document.addEventListener('DOMContentLoaded', function() {
   const calcBtn = document.getElementById('bfCalcBtn');
   if (!calcBtn) return;
 
-  // Replace the click handler with Google-enhanced version
-  calcBtn.replaceWith(calcBtn.cloneNode(true)); // remove old listener
-  const newBtn = document.getElementById('bfCalcBtn');
-  if (!newBtn) return;
-
-  newBtn.addEventListener('click', async function () {
+  calcBtn.addEventListener('click', async function() {
     const pickup  = document.getElementById('pickupLoc').value.trim();
     const drop    = document.getElementById('dropLoc').value.trim();
     const vehicle = document.getElementById('vehicleType').value.toLowerCase();
     const tripRaw = document.querySelector('input[name="tripType"]:checked');
     const isRT    = tripRaw && tripRaw.value === 'Round Trip';
 
-    if (!pickup || !drop) { alert('Please enter Pickup and Drop locations first.'); return; }
-    if (!vehicle) { alert('Please select a vehicle type first.'); return; }
+    if (!pickup||!drop) { alert('Please enter Pickup and Drop locations first.'); return; }
+    if (!vehicle)       { alert('Please select a vehicle type first.'); return; }
 
     const btn = this;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
 
     try {
-      const RATES = { sedan: 15, suv: 20, innova: 21 };
-      const BATA  = 400;
+      const BATA = 400;
       let vRate = 15;
       if (vehicle.includes('suv')) vRate = 20;
       else if (vehicle.includes('innova')) vRate = 21;
 
-      // Try Google Distance Matrix first (most accurate)
       let km, durationMin;
-      const googleResult = await getGoogleDistance(pickup, drop);
 
-      if (googleResult) {
-        km = parseFloat(googleResult.km);
-        durationMin = googleResult.min;
+      // 1. Try Google Distance Matrix
+      const gRes = await getGoogleDistance(pickup, drop);
+      if (gRes) {
+        km = parseFloat(gRes.km);
+        durationMin = gRes.min;
       } else {
-        // Fallback: Nominatim geocode + OSRM road routing
-        // Check cache first for speed, run both in parallel
-        let a = geocodeCache[pickup];
-        let b = geocodeCache[drop];
+        // 2. Geocode both in parallel, then OSRM
+        let a = geocodeCache[pickup], b = geocodeCache[drop];
+        const pA = a ? Promise.resolve([]) : fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup+', India')}&limit=1`).then(r=>r.json());
+        const pB = b ? Promise.resolve([]) : fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop+', India')}&limit=1`).then(r=>r.json());
+        const [gA, gB] = await Promise.all([pA, pB]);
+        if (!a) { if (!gA.length) throw new Error('Pickup not found: '+pickup); a={lat:parseFloat(gA[0].lat),lon:parseFloat(gA[0].lon)}; geocodeCache[pickup]=a; }
+        if (!b) { if (!gB.length) throw new Error('Drop not found: '+drop);    b={lat:parseFloat(gB[0].lat),lon:parseFloat(gB[0].lon)}; geocodeCache[drop]=b;   }
 
-        if (!a || !b) {
-          const promises = [];
-          if (!a) promises.push(fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup + ', India')}&limit=1`).then(r=>r.json()));
-          else promises.push(Promise.resolve(null));
-          if (!b) promises.push(fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop + ', India')}&limit=1`).then(r=>r.json()));
-          else promises.push(Promise.resolve(null));
-
-          const [geoA, geoB] = await Promise.all(promises);
-
-          if (!a) {
-            if (!geoA || !geoA.length) throw new Error(`Could not find pickup: "${pickup}"`);
-            a = { lat: parseFloat(geoA[0].lat), lon: parseFloat(geoA[0].lon) };
-            geocodeCache[pickup] = a;
-          }
-          if (!b) {
-            if (!geoB || !geoB.length) throw new Error(`Could not find drop: "${drop}"`);
-            b = { lat: parseFloat(geoB[0].lat), lon: parseFloat(geoB[0].lon) };
-            geocodeCache[drop] = b;
-          }
-        }
-
-        // Try OSRM road routing (actual road distance)
-        let osrmOk = false;
         try {
-          const osrmRes = await fetch(
-            `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`,
-            { signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined }
-          );
-          const osrmData = await osrmRes.json();
-          if (osrmData.routes && osrmData.routes.length) {
-            km = osrmData.routes[0].distance / 1000; // exact meters → km
-            durationMin = Math.round(osrmData.routes[0].duration / 60);
-            osrmOk = true;
-          }
-        } catch (_) {}
+          const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),8000);
+          const osrm = await fetch(`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`,{signal:ctrl.signal}).then(r=>r.json());
+          clearTimeout(t);
+          if (osrm.routes&&osrm.routes.length) { km=osrm.routes[0].distance/1000; durationMin=Math.round(osrm.routes[0].duration/60); }
+        } catch(_) {}
 
-        if (!osrmOk) {
-          // Last resort: Haversine × 1.4 road factor
-          const R = 6371;
-          const dLat = (b.lat - a.lat) * Math.PI / 180;
-          const dLon = (b.lon - a.lon) * Math.PI / 180;
-          const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180) * Math.cos(b.lat*Math.PI/180) * Math.sin(dLon/2)**2;
-          km = R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1-h)) * 1.4;
-          durationMin = Math.round(km / 50 * 60);
+        if (!km) {
+          const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
+          const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+          km=R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))*1.4; durationMin=Math.round(km/50*60);
         }
       }
 
-      const actualDist = isRT ? km * 2 : km;
-      const distFare   = Math.round(actualDist * vRate);
-      const minFare    = vRate * 10; // minimum 10km fare
-      const baseFare   = Math.max(distFare, minFare);
+      const actualDist = isRT ? km*2 : km;
+      const baseFare   = Math.max(Math.round(actualDist*vRate), vRate*10);
       const total      = baseFare + BATA;
+      const inrF = n => '\u20B9'+Math.round(n).toLocaleString('en-IN');
 
-      const fmtDur = (m) => { const h=Math.floor(m/60),r=m%60; return h?`${h}h ${r?r+'m':''}`.trim():`${r}m`; };
-      const inrFmt = (n) => '\u20B9' + Math.round(n).toLocaleString('en-IN');
-
-      document.getElementById('bfDistance').textContent = actualDist.toFixed(1) + ' km';
-      document.getElementById('bfRate').textContent  = inrFmt(vRate) + '/km';
-      document.getElementById('bfBase').textContent  = inrFmt(baseFare);
-      document.getElementById('bfBata').textContent  = inrFmt(BATA);
-      document.getElementById('bfTotal').textContent = inrFmt(total);
+      document.getElementById('bfDistance').textContent = actualDist.toFixed(1)+' km';
+      document.getElementById('bfRate').textContent     = inrF(vRate)+'/km';
+      document.getElementById('bfBase').textContent     = inrF(baseFare);
+      document.getElementById('bfBata').textContent     = inrF(BATA);
+      document.getElementById('bfTotal').textContent    = inrF(total);
       document.getElementById('bfFareCard').style.display = 'block';
 
-    } catch (err) {
-      alert('Could not calculate distance.\n' + err.message);
+    } catch(err) {
+      alert('Could not calculate distance.\n'+err.message);
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-route"></i> Calculate Distance &amp; Fare';
     }
   });
+
+  // Re-calc on vehicle/trip change
+  ['vehicleType'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', ()=>{ if(document.getElementById('bfFareCard').style.display!=='none') document.getElementById('bfCalcBtn').click(); });
+  });
+  document.querySelectorAll('input[name="tripType"]').forEach(r=>r.addEventListener('change',()=>{ if(document.getElementById('bfFareCard').style.display!=='none') document.getElementById('bfCalcBtn').click(); }));
 });
