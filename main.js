@@ -724,8 +724,13 @@ const LOCATIONS = [
 ];
 
 function initLocationAutocomplete() {
-  setupAutocomplete('pickupLoc', 'pickupList');
-  setupAutocomplete('dropLoc', 'dropList');
+  // Only setup booking form inputs with local LOCATIONS array
+  // Google Places handles these via setupGoogleAC when Maps loads
+  // But as fallback if Google doesn't load, use local array
+  if (!window.google || !window.google.maps) {
+    setupAutocomplete('pickupLoc', 'pickupList');
+    setupAutocomplete('dropLoc', 'dropList');
+  }
 }
 
 function setupAutocomplete(inputId, listId) {
@@ -963,22 +968,32 @@ function setupGoogleAC(inputId) {
   });
 }
 
-// Get driving distance using Google Distance Matrix API
+// Get driving distance using Google Distance Matrix JavaScript Service (browser-safe)
 async function getGoogleDistance(origin, destination) {
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=driving&key=${GOOGLE_API_KEY}`;
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
-      const el = data.rows[0].elements[0];
-      return {
-        km: (el.distance.value / 1000).toFixed(1),
-        min: Math.round(el.duration.value / 60),
-        text: el.distance.text
-      };
+  return new Promise((resolve) => {
+    if (!window.google || !window.google.maps || !window.google.maps.DistanceMatrixService) {
+      resolve(null);
+      return;
     }
-  } catch (e) {}
-  return null;
+    const svc = new google.maps.DistanceMatrixService();
+    svc.getDistanceMatrix({
+      origins: [origin],
+      destinations: [destination],
+      travelMode: google.maps.TravelMode.DRIVING,
+      unitSystem: google.maps.UnitSystem.METRIC,
+      region: 'in'
+    }, (response, status) => {
+      if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
+        const el = response.rows[0].elements[0];
+        resolve({
+          km: (el.distance.value / 1000).toFixed(1),
+          min: Math.round(el.duration.value / 60)
+        });
+      } else {
+        resolve(null);
+      }
+    });
+  });
 }
 
 // Override bfGetRoute to use Google Distance Matrix when available
@@ -1046,7 +1061,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const actualDist = isRT ? km * 2 : km;
-      const baseFare   = Math.round(actualDist * vRate);
+      const distFare   = Math.round(actualDist * vRate);
+      const minFare    = vRate * 10; // minimum 10km fare
+      const baseFare   = Math.max(distFare, minFare);
       const total      = baseFare + BATA;
 
       const fmtDur = (m) => { const h=Math.floor(m/60),r=m%60; return h?`${h}h ${r?r+'m':''}`.trim():`${r}m`; };
