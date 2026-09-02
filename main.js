@@ -886,25 +886,80 @@ function initGoogleMaps() {
 
 function setupGoogleAC(inputId) {
   const input = document.getElementById(inputId);
-  if (!input || !window.google || !window.google.maps) return;
+  if (!input) return;
 
-  // No type restrictions — show all places across India
-  const options = {
-    componentRestrictions: { country: 'in' }
-    // No 'types' restriction — shows cities, areas, streets, landmarks all
-  };
+  let timer = null;
+  let acList = document.createElement('ul');
+  acList.className = 'autocomplete-list';
+  acList.id = inputId + '_combined_list';
+  input.parentNode.style.position = 'relative';
+  input.parentNode.appendChild(acList);
 
-  const autocomplete = new google.maps.places.Autocomplete(input, options);
-  autocomplete.setFields(['formatted_address', 'geometry', 'name', 'address_components']);
+  function closeList() { acList.classList.remove('show'); acList.innerHTML = ''; }
 
-  // Style the Google autocomplete dropdown to match dark theme
-  input.addEventListener('focus', () => {
-    const pac = document.querySelector('.pac-container');
-    if (pac) {
-      pac.style.background = '#151820';
-      pac.style.border = '1px solid rgba(245,184,0,0.3)';
-      pac.style.borderRadius = '8px';
+  function renderItems(items) {
+    acList.innerHTML = '';
+    if (!items.length) { closeList(); return; }
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.innerHTML = `<i class="fas fa-map-marker-alt"></i><span><strong class="ac-area">${item.main}</strong><span class="ac-city">${item.sub || ''}</span></span>`;
+      li.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = item.value;
+        closeList();
+      });
+      acList.appendChild(li);
+    });
+    acList.classList.add('show');
+  }
+
+  input.addEventListener('input', function () {
+    clearTimeout(timer);
+    const q = this.value.trim();
+    if (q.length < 2) { closeList(); return; }
+    const lower = q.toLowerCase();
+
+    // Local LOCATIONS first — instant
+    const local = LOCATIONS.filter(l =>
+      l.a.toLowerCase().includes(lower) || l.c.toLowerCase().includes(lower)
+    ).slice(0, 5).map(l => ({
+      main: l.a,
+      sub: `${l.c}, ${l.s}`,
+      value: `${l.a}, ${l.c}`
+    }));
+
+    if (local.length) renderItems(local);
+
+    // Google Places — additional results
+    if (window.google && window.google.maps && window.google.maps.places) {
+      const svc = new google.maps.places.AutocompleteService();
+      svc.getPlacePredictions(
+        { input: q, componentRestrictions: { country: 'in' }, language: 'en' },
+        (predictions, status) => {
+          if (status !== 'OK' || !predictions) return;
+          const googleItems = predictions.map(p => ({
+            main: p.structured_formatting.main_text,
+            sub: p.structured_formatting.secondary_text || '',
+            value: p.description
+          }));
+          // Merge: local on top, google below, deduplicate
+          const seen = new Set(local.map(i => i.main.toLowerCase()));
+          const merged = [...local];
+          googleItems.forEach(g => {
+            if (!seen.has(g.main.toLowerCase())) {
+              seen.add(g.main.toLowerCase());
+              merged.push(g);
+            }
+          });
+          renderItems(merged.slice(0, 10));
+        }
+      );
     }
+  });
+
+  input.addEventListener('blur', () => setTimeout(closeList, 200));
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target) && !acList.contains(e.target)) closeList();
   });
 }
 
