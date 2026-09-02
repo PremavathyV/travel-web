@@ -926,12 +926,21 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
    ===================================================== */
 
 function initGoogleMaps() {
-  // Google loaded — re-run to add Google Places on top of local results
+  // Re-register all autocomplete inputs with Google Places
   [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']].forEach(([id,lid]) => {
     const inp = document.getElementById(id);
-    if (inp) delete inp.dataset.gac; // reset so it re-registers with Google
+    if (inp) delete inp.dataset.gac;
     setupGoogleAC(id, lid);
   });
+
+  // Pre-warm Google services so first user calculation is fast
+  // (instantiating these triggers the underlying HTTP connection)
+  setTimeout(() => {
+    try {
+      if (google.maps.DistanceMatrixService) new google.maps.DistanceMatrixService();
+      if (google.maps.DirectionsService)     new google.maps.DirectionsService();
+    } catch(_) {}
+  }, 500);
 }
 
 function setupGoogleAC(inputId, listId) {

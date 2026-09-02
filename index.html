@@ -20,9 +20,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="styles.css?v=16" />
-  <!-- Google Maps JavaScript API (Places + Maps + Routes) -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE&libraries=places,geometry&callback=initGoogleMaps" async defer></script>
+  <link rel="stylesheet" href="styles.css?v=17" />
+  <!-- Google Maps: load early (no async/defer) so it's ready before user clicks Calculate -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE&libraries=places,geometry&callback=initGoogleMaps"></script>
 </head>
 <body>
 
@@ -1052,6 +1052,6 @@
 <!-- Success Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="main.js?v=16"></script>
+<script src="main.js?v=17"></script>
 </body>
 </html>
