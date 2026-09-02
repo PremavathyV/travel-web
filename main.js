@@ -850,7 +850,6 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
       const dist=parseFloat(route.km),actualDist=isRT?dist*2:dist;
       const baseFare=Math.round(actualDist*vRate),total=baseFare+BATA;
       document.getElementById('bfDistance').textContent=actualDist.toFixed(1)+' km';
-      document.getElementById('bfDuration').textContent=fmtDur(route.min*(isRT?2:1));
       document.getElementById('bfRate').textContent=inr(vRate)+'/km';
       document.getElementById('bfBase').textContent=inr(baseFare);
       document.getElementById('bfBata').textContent=inr(BATA);
@@ -1084,7 +1083,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const inrFmt = (n) => '\u20B9' + Math.round(n).toLocaleString('en-IN');
 
       document.getElementById('bfDistance').textContent = actualDist.toFixed(1) + ' km';
-      document.getElementById('bfDuration').textContent = fmtDur(durationMin * (isRT ? 2 : 1));
       document.getElementById('bfRate').textContent  = inrFmt(vRate) + '/km';
       document.getElementById('bfBase').textContent  = inrFmt(baseFare);
       document.getElementById('bfBata').textContent  = inrFmt(BATA);
