@@ -1030,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (vehicle.includes('suv')) vRate = 20;
       else if (vehicle.includes('innova')) vRate = 21;
 
-      // Try Google Distance Matrix first
+      // Try Google Distance Matrix first (most accurate)
       let km, durationMin;
       const googleResult = await getGoogleDistance(pickup, drop);
 
@@ -1038,25 +1038,39 @@ document.addEventListener('DOMContentLoaded', function () {
         km = parseFloat(googleResult.km);
         durationMin = googleResult.min;
       } else {
-        // Fallback to OSRM
-        const pickupEnc = encodeURIComponent(pickup + ', India');
-        const dropEnc   = encodeURIComponent(drop + ', India');
-        const geoA = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${pickupEnc}&limit=1`).then(r=>r.json());
-        const geoB = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${dropEnc}&limit=1`).then(r=>r.json());
-        if (!geoA.length || !geoB.length) throw new Error('Location not found');
+        // Fallback: Nominatim geocode + OSRM road routing
+        const geoA = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup + ', India')}&limit=1`).then(r=>r.json());
+        const geoB = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop + ', India')}&limit=1`).then(r=>r.json());
+
+        if (!geoA.length) throw new Error(`Could not find pickup: "${pickup}"`);
+        if (!geoB.length) throw new Error(`Could not find drop: "${drop}"`);
+
         const a = { lat: parseFloat(geoA[0].lat), lon: parseFloat(geoA[0].lon) };
         const b = { lat: parseFloat(geoB[0].lat), lon: parseFloat(geoB[0].lon) };
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`;
-        const osrm = await fetch(osrmUrl).then(r=>r.json());
-        if (osrm.routes && osrm.routes.length) {
-          km = (osrm.routes[0].distance / 1000);
-          durationMin = Math.round(osrm.routes[0].duration / 60);
-        } else {
-          // Haversine
-          const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lon-a.lon)*Math.PI/180;
-          const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-          km = R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))*1.3;
-          durationMin = Math.round(km/55*60);
+
+        // Try OSRM road routing (actual road distance)
+        let osrmOk = false;
+        try {
+          const osrmRes = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`,
+            { signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined }
+          );
+          const osrmData = await osrmRes.json();
+          if (osrmData.routes && osrmData.routes.length) {
+            km = osrmData.routes[0].distance / 1000; // exact meters → km
+            durationMin = Math.round(osrmData.routes[0].duration / 60);
+            osrmOk = true;
+          }
+        } catch (_) {}
+
+        if (!osrmOk) {
+          // Last resort: Haversine × 1.4 road factor
+          const R = 6371;
+          const dLat = (b.lat - a.lat) * Math.PI / 180;
+          const dLon = (b.lon - a.lon) * Math.PI / 180;
+          const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180) * Math.cos(b.lat*Math.PI/180) * Math.sin(dLon/2)**2;
+          km = R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1-h)) * 1.4;
+          durationMin = Math.round(km / 50 * 60);
         }
       }
 
