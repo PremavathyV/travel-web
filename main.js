@@ -890,6 +890,10 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
       document.getElementById('bfTotal').textContent     = inr(total);
       document.getElementById('bfFareCard').style.display = 'block';
 
+      // Re-enable button IMMEDIATELY after fare is shown — don't wait for map
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-route"></i> Calculate Distance &amp; Fare';
+
       /* --- STEP 2: Draw map route in background (non-blocking) --- */
       initBFMap();
       if (bfMap) drawRouteAsync(pickup, drop);
