@@ -888,13 +888,14 @@ function setupGoogleAC(inputId) {
   const input = document.getElementById(inputId);
   if (!input || !window.google || !window.google.maps) return;
 
+  // No type restrictions — show all places across India
   const options = {
-    componentRestrictions: { country: 'in' },
-    types: ['geocode', 'establishment']
+    componentRestrictions: { country: 'in' }
+    // No 'types' restriction — shows cities, areas, streets, landmarks all
   };
 
   const autocomplete = new google.maps.places.Autocomplete(input, options);
-  autocomplete.setFields(['formatted_address', 'geometry', 'name']);
+  autocomplete.setFields(['formatted_address', 'geometry', 'name', 'address_components']);
 
   // Style the Google autocomplete dropdown to match dark theme
   input.addEventListener('focus', () => {
