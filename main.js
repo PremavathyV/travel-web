@@ -723,159 +723,214 @@ const LOCATIONS = [
   {a:'Guwahati',          c:'Guwahati',    s:'Assam'},
 ];
 
+/* Initialise autocomplete on all pickup/drop inputs (local + Google Places) */
 function initLocationAutocomplete() {
-  // setupGoogleAC handles all inputs — run immediately with local LOCATIONS only
-  // Google Places gets added when initGoogleMaps fires
-  [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']].forEach(([id,lid])=>setupGoogleAC(id,lid));
+  [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']]
+    .forEach(([id, lid]) => setupGoogleAC(id, lid));
 }
-
-function setupAutocomplete(inputId, listId) {
-  const input = document.getElementById(inputId);
-  const list  = document.getElementById(listId);
-  if (!input || !list) return;
-
-  let activeIdx = -1;
-
-  input.addEventListener('input', () => {
-    const val = input.value.trim();
-    activeIdx = -1;
-    if (val.length < 2) { closeList(list); return; }
-
-    const lower = val.toLowerCase();
-    const score = (loc) => {
-      const full = `${loc.a} ${loc.c} ${loc.s}`.toLowerCase();
-      if (loc.a.toLowerCase().startsWith(lower)) return 0;
-      if (loc.c.toLowerCase().startsWith(lower)) return 1;
-      if (full.includes(lower)) return 2;
-      return 99;
-    };
-
-    const matches = LOCATIONS
-      .filter(loc => `${loc.a} ${loc.c} ${loc.s}`.toLowerCase().includes(lower))
-      .sort((a, b) => score(a) - score(b))
-      .slice(0, 10);
-
-    if (!matches.length) { closeList(list); return; }
-
-    list.innerHTML = matches.map((loc, i) => {
-      const displayArea  = loc.a.replace(new RegExp(`(${escReg(val)})`, 'gi'), '<strong style="color:var(--primary)">$1</strong>');
-      const displayCity  = loc.c.replace(new RegExp(`(${escReg(val)})`, 'gi'), '<strong style="color:var(--primary)">$1</strong>');
-      return `<li data-idx="${i}" data-val="${loc.a}, ${loc.c}, ${loc.s}">
-        <i class="fas fa-map-marker-alt"></i>
-        <span class="ac-area">${displayArea}</span>
-        <span class="ac-city">${displayCity}, ${loc.s}</span>
-      </li>`;
-    }).join('');
-    list.classList.add('show');
-
-    list.querySelectorAll('li').forEach(li => {
-      li.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        input.value = li.dataset.val;
-        input.classList.remove('error');
-        const errEl = document.getElementById(inputId + 'Err');
-        if (errEl) errEl.textContent = '';
-        closeList(list);
-      });
-    });
-  });
-
-  input.addEventListener('keydown', (e) => {
-    const items = list.querySelectorAll('li');
-    if (!items.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeIdx = Math.min(activeIdx + 1, items.length - 1);
-      updateActive(items, activeIdx);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeIdx = Math.max(activeIdx - 1, 0);
-      updateActive(items, activeIdx);
-    } else if (e.key === 'Enter') {
-      if (activeIdx >= 0 && items[activeIdx]) {
-        e.preventDefault();
-        input.value = items[activeIdx].dataset.val;
-        closeList(list);
-      }
-    } else if (e.key === 'Escape') {
-      closeList(list);
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!input.contains(e.target) && !list.contains(e.target)) closeList(list);
-  });
-}
-
-function escReg(str) { return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-function updateActive(items, idx) {
-  items.forEach(li => li.classList.remove('active'));
-  if (items[idx]) { items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); }
-}
-function closeList(list) { list.classList.remove('show'); list.innerHTML = ''; }
 
 document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
 
 
 
 /* =====================================================
-   BOOKING FORM — Inline Fare Calculator
+   BOOKING FORM — Inline Fare Calculator (Google Maps)
    ===================================================== */
-(function(){
-  if(typeof L==='undefined')return;
-  const RATES={sedan:15,suv:20,innova:21},BATA = 400;
-  let bfMap=null,bfRoute=null,bfPinA=null,bfPinB=null;
-  function initBFMap(){if(bfMap)return;bfMap=L.map('bfMap',{zoomControl:true,scrollWheelZoom:false}).setView([11,78.5],6);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(bfMap);}
-  function inr(n){return '\u20B9'+Math.round(n).toLocaleString('en-IN');}
-  function fmtDur(m){const h=Math.floor(m/60),r=m%60;return h?`${h}h ${r?r+'m':''}`.trim():`${r}m`;}
-  function mkDot(color){return L.divIcon({className:'',iconSize:[13,13],iconAnchor:[6,6],html:`<div style="width:13px;height:13px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.5)"></div>`});}
-  async function bfGeocode(q){const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q+', India')}&limit=1`);const d=await res.json();if(!d.length)throw new Error('Not found: '+q);return{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)};}
-  async function bfGetRoute(a,b){const url=`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;try{const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),8000);const res=await fetch(url,{signal:ctrl.signal});clearTimeout(t);const d=await res.json();if(d.routes&&d.routes.length){const r=d.routes[0];return{km:(r.distance/1000).toFixed(1),min:Math.round(r.duration/60),geo:r.geometry};}}catch(_){}const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;const km=(R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))*1.3).toFixed(1);return{km,min:Math.round(parseFloat(km)/55*60),geo:null};}
-  async function calcBFFare(){
-    const pickup=document.getElementById('pickupLoc').value.trim(),drop=document.getElementById('dropLoc').value.trim();
-    const vehicle=document.getElementById('vehicleType').value.toLowerCase();
-    const tripRaw=document.querySelector('input[name="tripType"]:checked');
-    const isRT=tripRaw&&tripRaw.value==='Round Trip';
-    if(!pickup||!drop){alert('Please enter Pickup and Drop locations first.');return;}
-    if(!vehicle||vehicle===''){alert('Please select a vehicle type first.');return;}
-    const btn=document.getElementById('bfCalcBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Calculating...';
-    try{
-      const[from,to]=await Promise.all([bfGeocode(pickup),bfGeocode(drop)]);
-      const route=await bfGetRoute(from,to);
-      let vRate=15;if(vehicle.includes('suv'))vRate=20;else if(vehicle.includes('innova'))vRate=21;
-      const dist=parseFloat(route.km),actualDist=isRT?dist*2:dist;
-      const baseFare=Math.round(actualDist*vRate),total=baseFare+BATA;
-      document.getElementById('bfDistance').textContent=actualDist.toFixed(1)+' km';
-      document.getElementById('bfRate').textContent=inr(vRate)+'/km';
-      document.getElementById('bfBase').textContent=inr(baseFare);
-      document.getElementById('bfBata').textContent=inr(BATA);
-      document.getElementById('bfTotal').textContent=inr(total);
-      document.getElementById('bfFareCard').style.display='block';
-      initBFMap();
-      if(bfRoute){bfMap.removeLayer(bfRoute);bfRoute=null;}
-      if(bfPinA){bfMap.removeLayer(bfPinA);bfPinA=null;}
-      if(bfPinB){bfMap.removeLayer(bfPinB);bfPinB=null;}
-      bfPinA=L.marker([from.lat,from.lon],{icon:mkDot('#22c55e')}).bindPopup(`<b>Pickup:</b> ${pickup}`).addTo(bfMap);
-      bfPinB=L.marker([to.lat,to.lon],{icon:mkDot('#ef4444')}).bindPopup(`<b>Drop:</b> ${drop}`).addTo(bfMap);
-      if(route.geo){bfRoute=L.geoJSON(route.geo,{style:{color:'#F5B800',weight:5,opacity:0.85}}).addTo(bfMap);bfMap.fitBounds(bfRoute.getBounds(),{padding:[20,20]});}
-      else{bfRoute=L.polyline([[from.lat,from.lon],[to.lat,to.lon]],{color:'#F5B800',weight:4,dashArray:'8 6',opacity:0.7}).addTo(bfMap);bfMap.fitBounds([[from.lat,from.lon],[to.lat,to.lon]],{padding:[30,30]});}
-      setTimeout(()=>bfMap.invalidateSize(),150);
-    }catch(err){alert('Could not calculate: '+err.message);}
-    finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-route"></i> Calculate Distance &amp; Fare';}
+(function () {
+  const BATA = 400;
+  // Google Maps state
+  let bfMap = null, bfDirectionsRenderer = null, bfPickupMarker = null, bfDropMarker = null;
+
+  function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
+
+  /* Lazy-init Google Map in the #bfMap container */
+  function initBFMap() {
+    if (bfMap) return;
+    if (!window.google || !google.maps) { return; }
+    bfMap = new google.maps.Map(document.getElementById('bfMap'), {
+      zoom: 6,
+      center: { lat: 11.0, lng: 78.5 },
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      gestureHandling: 'cooperative',
+      styles: [
+        { elementType: 'geometry', stylers: [{ color: '#1a1c23' }] },
+        { elementType: 'labels.text.fill', stylers: [{ color: '#AEB3BD' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2f3a' }] },
+        { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#373a47' }] },
+        { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c4058' }] },
+        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
+        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', stylers: [{ visibility: 'off' }] }
+      ]
+    });
+    bfDirectionsRenderer = new google.maps.DirectionsRenderer({
+      suppressMarkers: true,
+      polylineOptions: { strokeColor: '#F5B800', strokeWeight: 5, strokeOpacity: 0.9 }
+    });
+    bfDirectionsRenderer.setMap(bfMap);
   }
-  document.addEventListener('DOMContentLoaded',function(){
-    const btn=document.getElementById('bfCalcBtn');if(btn)btn.addEventListener('click',calcBFFare);
-    const vSel=document.getElementById('vehicleType');if(vSel)vSel.addEventListener('change',function(){const card=document.getElementById('bfFareCard');if(card&&card.style.display!=='none')calcBFFare();});
-    document.querySelectorAll('input[name="tripType"]').forEach(r=>{r.addEventListener('change',function(){const card=document.getElementById('bfFareCard');if(card&&card.style.display!=='none')calcBFFare();});});
+
+  /* Place a styled marker on the map */
+  function mkMarker(pos, color, label) {
+    return new google.maps.Marker({
+      position: pos,
+      map: bfMap,
+      title: label,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 9,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2
+      }
+    });
+  }
+
+  /* Core: get route via Google Directions Service */
+  function getGoogleRoute(pickup, drop) {
+    return new Promise((resolve, reject) => {
+      if (!window.google || !google.maps || !google.maps.DirectionsService) {
+        reject(new Error('Google Maps not loaded. Please refresh and try again.'));
+        return;
+      }
+      new google.maps.DirectionsService().route({
+        origin: pickup,
+        destination: drop,
+        travelMode: google.maps.TravelMode.DRIVING,
+        region: 'IN',
+        provideRouteAlternatives: false
+      }, (result, status) => {
+        if (status === google.maps.DirectionsStatus.OK) {
+          const leg = result.routes[0].legs[0];
+          resolve({
+            km: (leg.distance.value / 1000),
+            min: Math.round(leg.duration.value / 60),
+            pickupLatLng: leg.start_location,
+            dropLatLng: leg.end_location,
+            dirResult: result
+          });
+        } else {
+          const msgs = {
+            NOT_FOUND: 'One or both locations could not be found. Please select a valid location from the suggestions.',
+            ZERO_RESULTS: 'No driving route found between these locations.',
+            MAX_WAYPOINTS_EXCEEDED: 'Too many waypoints.',
+            INVALID_REQUEST: 'Invalid route request. Please check your pickup and drop locations.',
+            OVER_DAILY_LIMIT: 'API usage limit reached. Please try again later.',
+            OVER_QUERY_LIMIT: 'Too many requests. Please try again in a moment.',
+            REQUEST_DENIED: 'Route request was denied. Please check your connection.',
+            UNKNOWN_ERROR: 'An unknown error occurred while calculating the route. Please try again.'
+          };
+          reject(new Error(msgs[status] || 'Route calculation failed: ' + status));
+        }
+      });
+    });
+  }
+
+  /* Main fare calculation handler */
+  async function calcBFFare() {
+    const pickup  = document.getElementById('pickupLoc').value.trim();
+    const drop    = document.getElementById('dropLoc').value.trim();
+    const vehicle = document.getElementById('vehicleType').value.toLowerCase();
+    const tripRaw = document.querySelector('input[name="tripType"]:checked');
+    const isRT    = tripRaw && tripRaw.value === 'Round Trip';
+
+    if (!pickup || !drop) {
+      showToast('Please enter both Pickup and Drop locations first.', 'error');
+      return;
+    }
+    if (!vehicle) {
+      showToast('Please select a vehicle type first.', 'error');
+      return;
+    }
+    if (!window.google || !google.maps) {
+      showToast('Google Maps is still loading. Please wait a moment and try again.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('bfCalcBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+
+    try {
+      const route = await getGoogleRoute(pickup, drop);
+
+      // Fare calculation — unchanged business logic
+      let vRate = 15;
+      if (vehicle.includes('suv'))    vRate = 20;
+      else if (vehicle.includes('innova')) vRate = 21;
+
+      const oneWayKm  = route.km;
+      const actualDist = isRT ? oneWayKm * 2 : oneWayKm;
+      const baseFare  = Math.max(Math.round(actualDist * vRate), vRate * 10);
+      const total     = baseFare + BATA;
+
+      // Update fare display elements
+      document.getElementById('bfDistance').textContent = actualDist.toFixed(1) + ' km';
+      document.getElementById('bfRate').textContent     = inr(vRate) + '/km';
+      document.getElementById('bfBase').textContent     = inr(baseFare);
+      document.getElementById('bfBata').textContent     = inr(BATA);
+      document.getElementById('bfTotal').textContent    = inr(total);
+      document.getElementById('bfFareCard').style.display = 'block';
+
+      // Render map with route
+      initBFMap();
+      if (!bfMap) { return; } // Google Maps not ready yet — fare is still shown
+
+      // Clear old markers / route
+      if (bfPickupMarker) { bfPickupMarker.setMap(null); bfPickupMarker = null; }
+      if (bfDropMarker)   { bfDropMarker.setMap(null);   bfDropMarker   = null; }
+
+      // Draw route polyline
+      bfDirectionsRenderer.setDirections(route.dirResult);
+
+      // Add custom markers
+      bfPickupMarker = mkMarker(route.pickupLatLng, '#22c55e', 'Pickup: ' + pickup);
+      bfDropMarker   = mkMarker(route.dropLatLng,   '#ef4444', 'Drop: ' + drop);
+
+      // Fit map to route bounds
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(route.pickupLatLng);
+      bounds.extend(route.dropLatLng);
+      bfMap.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+
+      setTimeout(() => {
+        if (bfMap) google.maps.event.trigger(bfMap, 'resize');
+      }, 200);
+
+    } catch (err) {
+      showToast(err.message || 'Could not calculate the route. Please try again.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-route"></i> Calculate Distance &amp; Fare';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('bfCalcBtn');
+    if (btn) btn.addEventListener('click', calcBFFare);
+
+    const vSel = document.getElementById('vehicleType');
+    if (vSel) vSel.addEventListener('change', function () {
+      const card = document.getElementById('bfFareCard');
+      if (card && card.style.display !== 'none') calcBFFare();
+    });
+
+    document.querySelectorAll('input[name="tripType"]').forEach(r => {
+      r.addEventListener('change', function () {
+        const card = document.getElementById('bfFareCard');
+        if (card && card.style.display !== 'none') calcBFFare();
+      });
+    });
   });
 })();
 
 
 /* =====================================================
-   GOOGLE PLACES AUTOCOMPLETE + DISTANCE MATRIX
+   GOOGLE PLACES AUTOCOMPLETE
    ===================================================== */
-const GOOGLE_API_KEY = 'AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE';
-const geocodeCache = {};
 
 function initGoogleMaps() {
   // Google loaded — re-run to add Google Places on top of local results
@@ -938,104 +993,3 @@ function setupGoogleAC(inputId, listId) {
   document.addEventListener('click', e=>{ if(!input.contains(e.target)&&!list.contains(e.target)) closeL(); });
 }
 
-// Google Distance Matrix (browser JS service)
-async function getGoogleDistance(origin, destination) {
-  return new Promise(resolve => {
-    if (!window.google||!google.maps||!google.maps.DistanceMatrixService) { resolve(null); return; }
-    new google.maps.DistanceMatrixService().getDistanceMatrix(
-      {origins:[origin],destinations:[destination],travelMode:google.maps.TravelMode.DRIVING,unitSystem:google.maps.UnitSystem.METRIC,region:'in'},
-      (res,status) => {
-        if (status==='OK'&&res.rows[0].elements[0].status==='OK') {
-          const el=res.rows[0].elements[0];
-          resolve({km:(el.distance.value/1000).toFixed(1),min:Math.round(el.duration.value/60)});
-        } else resolve(null);
-      }
-    );
-  });
-}
-
-// Override bfGetRoute to use Google Distance Matrix when available
-const _origBfGetRoute = typeof bfGetRoute !== 'undefined' ? bfGetRoute : null;
-
-// Booking form fare calculator (attached after DOM ready)
-document.addEventListener('DOMContentLoaded', function() {
-  const calcBtn = document.getElementById('bfCalcBtn');
-  if (!calcBtn) return;
-
-  calcBtn.addEventListener('click', async function() {
-    const pickup  = document.getElementById('pickupLoc').value.trim();
-    const drop    = document.getElementById('dropLoc').value.trim();
-    const vehicle = document.getElementById('vehicleType').value.toLowerCase();
-    const tripRaw = document.querySelector('input[name="tripType"]:checked');
-    const isRT    = tripRaw && tripRaw.value === 'Round Trip';
-
-    if (!pickup||!drop) { alert('Please enter Pickup and Drop locations first.'); return; }
-    if (!vehicle)       { alert('Please select a vehicle type first.'); return; }
-
-    const btn = this;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
-
-    try {
-      const BATA = 400;
-      let vRate = 15;
-      if (vehicle.includes('suv')) vRate = 20;
-      else if (vehicle.includes('innova')) vRate = 21;
-
-      let km, durationMin;
-
-      // 1. Try Google Distance Matrix
-      const gRes = await getGoogleDistance(pickup, drop);
-      if (gRes) {
-        km = parseFloat(gRes.km);
-        durationMin = gRes.min;
-      } else {
-        // 2. Geocode both in parallel, then OSRM
-        let a = geocodeCache[pickup], b = geocodeCache[drop];
-        const pA = a ? Promise.resolve([]) : fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup+', India')}&limit=1`).then(r=>r.json());
-        const pB = b ? Promise.resolve([]) : fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(drop+', India')}&limit=1`).then(r=>r.json());
-        const [gA, gB] = await Promise.all([pA, pB]);
-        if (!a) { if (!gA.length) throw new Error('Pickup not found: '+pickup); a={lat:parseFloat(gA[0].lat),lon:parseFloat(gA[0].lon)}; geocodeCache[pickup]=a; }
-        if (!b) { if (!gB.length) throw new Error('Drop not found: '+drop);    b={lat:parseFloat(gB[0].lat),lon:parseFloat(gB[0].lon)}; geocodeCache[drop]=b;   }
-
-        try {
-          const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),8000);
-          const osrm = await fetch(`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`,{signal:ctrl.signal}).then(r=>r.json());
-          clearTimeout(t);
-          if (osrm.routes&&osrm.routes.length) { km=osrm.routes[0].distance/1000; durationMin=Math.round(osrm.routes[0].duration/60); }
-        } catch(_) {}
-
-        if (!km) {
-          const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
-          const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-          km=R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))*1.4; durationMin=Math.round(km/50*60);
-        }
-      }
-
-      const actualDist = isRT ? km*2 : km;
-      const baseFare   = Math.max(Math.round(actualDist*vRate), vRate*10);
-      const total      = baseFare + BATA;
-      const inrF = n => '\u20B9'+Math.round(n).toLocaleString('en-IN');
-
-      document.getElementById('bfDistance').textContent = actualDist.toFixed(1)+' km';
-      document.getElementById('bfRate').textContent     = inrF(vRate)+'/km';
-      document.getElementById('bfBase').textContent     = inrF(baseFare);
-      document.getElementById('bfBata').textContent     = inrF(BATA);
-      document.getElementById('bfTotal').textContent    = inrF(total);
-      document.getElementById('bfFareCard').style.display = 'block';
-
-    } catch(err) {
-      alert('Could not calculate distance.\n'+err.message);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-route"></i> Calculate Distance &amp; Fare';
-    }
-  });
-
-  // Re-calc on vehicle/trip change
-  ['vehicleType'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('change', ()=>{ if(document.getElementById('bfFareCard').style.display!=='none') document.getElementById('bfCalcBtn').click(); });
-  });
-  document.querySelectorAll('input[name="tripType"]').forEach(r=>r.addEventListener('change',()=>{ if(document.getElementById('bfFareCard').style.display!=='none') document.getElementById('bfCalcBtn').click(); }));
-});
