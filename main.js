@@ -787,13 +787,13 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     return new Promise((resolve, reject) => {
       let settled = false;
 
-      // Safety timeout — if Google never calls back, reject after 10s
+      // Safety timeout — if Google never calls back, reject after 8s
       const timer = setTimeout(() => {
         if (!settled) {
           settled = true;
-          reject(new Error('Calculation timed out. Please check your internet connection and try again.'));
+          reject(new Error('__TIMEOUT__'));
         }
-      }, 10000);
+      }, 8000);
 
       try {
         new google.maps.DistanceMatrixService().getDistanceMatrix({
@@ -812,31 +812,46 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
             if (el.status === 'OK') {
               resolve({
                 km: el.distance.value / 1000,
-                min: Math.round(el.duration.value / 60)
+                min: Math.round(el.duration.value / 60),
+                source: 'google'
               });
             } else {
-              reject(new Error(
-                el.status === 'NOT_FOUND'   ? 'Location not found. Please type and select a location from the dropdown suggestions.' :
-                el.status === 'ZERO_RESULTS'? 'No driving route found between these locations.' :
-                'Could not calculate distance (' + el.status + '). Please select locations from suggestions.'
-              ));
+              reject(new Error('__API_ERROR__:' + el.status));
             }
           } else {
-            reject(new Error(
-              status === 'REQUEST_DENIED'  ? 'Maps API request denied. Please check your API key restrictions.' :
-              status === 'OVER_QUERY_LIMIT'? 'Too many requests. Please try again in a moment.' :
-              status === 'INVALID_REQUEST' ? 'Invalid locations. Please select from the dropdown suggestions.' :
-              'Distance calculation failed: ' + status
-            ));
+            reject(new Error('__API_ERROR__:' + status));
           }
         });
       } catch (e) {
         clearTimeout(timer);
-        if (!settled) {
-          settled = true;
-          reject(new Error('Google Maps is not ready. Please refresh the page and try again.'));
-        }
+        if (!settled) { settled = true; reject(new Error('__TIMEOUT__')); }
       }
+    });
+  }
+
+  /* Haversine straight-line distance × road factor as fallback */
+  function haversineKm(pickup, drop) {
+    return new Promise((resolve, reject) => {
+      if (!window.google || !google.maps || !google.maps.Geocoder) {
+        reject(new Error('Maps not loaded')); return;
+      }
+      const gc = new google.maps.Geocoder();
+      const geocode = (addr) => new Promise((res, rej) => {
+        gc.geocode({ address: addr + ', India', region: 'IN' }, (results, status) => {
+          if (status === 'OK' && results[0]) res(results[0].geometry.location);
+          else rej(new Error('Could not find location: ' + addr));
+        });
+      });
+      Promise.all([geocode(pickup), geocode(drop)]).then(([a, b]) => {
+        const R = 6371;
+        const dLat = (b.lat() - a.lat()) * Math.PI / 180;
+        const dLon = (b.lng() - a.lng()) * Math.PI / 180;
+        const h = Math.sin(dLat/2)**2 + Math.cos(a.lat()*Math.PI/180) *
+                  Math.cos(b.lat()*Math.PI/180) * Math.sin(dLon/2)**2;
+        const straight = R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1-h));
+        // Road distance ≈ straight × 1.35 for Indian roads
+        resolve({ km: straight * 1.35, min: Math.round(straight * 1.35 / 55 * 60), source: 'estimate' });
+      }).catch(reject);
     });
   }
 
@@ -894,8 +909,20 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
 
     try {
-      /* --- STEP 1: Fast distance fetch (shows fare immediately) --- */
-      const dist = await getDistanceMatrix(pickup, drop);
+      /* --- STEP 1: Try Google Distance Matrix, fall back to geocode estimate --- */
+      let dist;
+      let isEstimate = false;
+      try {
+        dist = await getDistanceMatrix(pickup, drop);
+      } catch (apiErr) {
+        // If API is denied/timed out, fall back to Geocoder + haversine estimate
+        if (apiErr.message.startsWith('__TIMEOUT__') || apiErr.message.startsWith('__API_ERROR__')) {
+          dist = await haversineKm(pickup, drop);
+          isEstimate = true;
+        } else {
+          throw apiErr;
+        }
+      }
 
       let vRate = 15;
       if (vehicle.includes('suv'))         vRate = 20;
@@ -906,12 +933,15 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
       const baseFare   = Math.max(Math.round(actualDist * vRate), vRate * 10);
       const total      = baseFare + BATA;
 
-      document.getElementById('bfDistance').textContent  = actualDist.toFixed(1) + ' km';
+      document.getElementById('bfDistance').textContent  = actualDist.toFixed(1) + ' km' + (isEstimate ? ' (est.)' : '');
       document.getElementById('bfRate').textContent      = inr(vRate) + '/km';
       document.getElementById('bfBase').textContent      = inr(baseFare);
       document.getElementById('bfBata').textContent      = inr(BATA);
       document.getElementById('bfTotal').textContent     = inr(total);
       document.getElementById('bfFareCard').style.display = 'block';
+      if (isEstimate) {
+        showToast('Showing estimated distance. For exact fare, contact us directly.', 'success');
+      }
 
       // Re-enable button IMMEDIATELY after fare is shown — don't wait for map
       btn.disabled = false;
