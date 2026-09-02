@@ -835,11 +835,18 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
       if (!window.google || !google.maps || !google.maps.Geocoder) {
         reject(new Error('Maps not loaded')); return;
       }
+      // Clean up duplicate parts e.g. "Kanchipuram, Kanchipuram" → "Kanchipuram"
+      function cleanAddr(addr) {
+        const parts = addr.split(',').map(p => p.trim());
+        const unique = [];
+        parts.forEach(p => { if (!unique.some(u => u.toLowerCase() === p.toLowerCase())) unique.push(p); });
+        return unique.join(', ');
+      }
       const gc = new google.maps.Geocoder();
       const geocode = (addr) => new Promise((res, rej) => {
-        gc.geocode({ address: addr + ', India', region: 'IN' }, (results, status) => {
+        gc.geocode({ address: cleanAddr(addr) + ', India', region: 'IN' }, (results, status) => {
           if (status === 'OK' && results[0]) res(results[0].geometry.location);
-          else rej(new Error('Could not find location: ' + addr));
+          else rej(new Error('Could not find location: ' + cleanAddr(addr)));
         });
       });
       Promise.all([geocode(pickup), geocode(drop)]).then(([a, b]) => {
@@ -1033,7 +1040,7 @@ function setupGoogleAC(inputId, listId) {
     if (q.length < 2) { closeL(); return; }
     const local = LOCATIONS.filter(l=>l.a.toLowerCase().includes(lower)||l.c.toLowerCase().includes(lower))
       .sort((a,b)=>(a.a.toLowerCase().startsWith(lower)?0:1)-(b.a.toLowerCase().startsWith(lower)?0:1))
-      .slice(0,6).map(l=>({main:l.a,sub:`${l.c}, ${l.s}`,value:`${l.a}, ${l.c}`}));
+      .slice(0,6).map(l=>({main:l.a,sub:`${l.c}, ${l.s}`,value:l.a.toLowerCase()===l.c.toLowerCase()?l.a:`${l.a}, ${l.c}`}));
     renderL(local);
     timer = setTimeout(()=>{
       if (!window.google||!google.maps||!google.maps.places) return;
