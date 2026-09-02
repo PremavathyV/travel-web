@@ -827,7 +827,7 @@ document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
    ===================================================== */
 (function(){
   if(typeof L==='undefined')return;
-  const RATES={sedan:15,suv:20,innova:21},BATA=250;
+  const RATES={sedan:15,suv:20,innova:21},BATA = 400;
   let bfMap=null,bfRoute=null,bfPinA=null,bfPinB=null;
   function initBFMap(){if(bfMap)return;bfMap=L.map('bfMap',{zoomControl:true,scrollWheelZoom:false}).setView([11,78.5],6);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(bfMap);}
   function inr(n){return '\u20B9'+Math.round(n).toLocaleString('en-IN');}
@@ -1025,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     try {
       const RATES = { sedan: 15, suv: 20, innova: 21 };
-      const BATA  = 250;
+      const BATA  = 400;
       let vRate = 15;
       if (vehicle.includes('suv')) vRate = 20;
       else if (vehicle.includes('innova')) vRate = 21;
