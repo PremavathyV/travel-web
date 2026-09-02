@@ -724,13 +724,9 @@ const LOCATIONS = [
 ];
 
 function initLocationAutocomplete() {
-  // Only setup booking form inputs with local LOCATIONS array
-  // Google Places handles these via setupGoogleAC when Maps loads
-  // But as fallback if Google doesn't load, use local array
-  if (!window.google || !window.google.maps) {
-    setupAutocomplete('pickupLoc', 'pickupList');
-    setupAutocomplete('dropLoc', 'dropList');
-  }
+  // setupGoogleAC handles all inputs — run immediately with local LOCATIONS only
+  // Google Places gets added when initGoogleMaps fires
+  [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']].forEach(([id,lid])=>setupGoogleAC(id,lid));
 }
 
 function setupAutocomplete(inputId, listId) {
@@ -882,7 +878,12 @@ const GOOGLE_API_KEY = 'AIzaSyAwcYD5AB0QP9vOhVcVvsy-gymI4At8EtE';
 const geocodeCache = {};
 
 function initGoogleMaps() {
-  [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']].forEach(([id,lid])=>setupGoogleAC(id,lid));
+  // Google loaded — re-run to add Google Places on top of local results
+  [['pickupLoc','pickupList'],['dropLoc','dropList'],['rcPickup','rcPickupList'],['rcDrop','rcDropList']].forEach(([id,lid]) => {
+    const inp = document.getElementById(id);
+    if (inp) delete inp.dataset.gac; // reset so it re-registers with Google
+    setupGoogleAC(id, lid);
+  });
 }
 
 function setupGoogleAC(inputId, listId) {
