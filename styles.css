@@ -586,8 +586,8 @@ section { position: relative; }
   border: 1px solid var(--gold-border);
   box-shadow: var(--shadow-lg);
 }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; overflow: visible; }
+.form-group { display: flex; flex-direction: column; gap: 6px; position: relative; overflow: visible; }
 .form-group-full { grid-column: 1 / -1; }
 .form-group label {
   font-size: 0.78rem; font-weight: 700;
@@ -1149,7 +1149,7 @@ section { position: relative; }
 .reveal-right.visible { opacity: 1; transform: none; }
 
 /* ---- Autocomplete ---- */
-.autocomplete-wrap { position: relative; }
+.autocomplete-wrap { position: relative; overflow: visible; }
 .autocomplete-wrap .ac-icon {
   position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
   color: var(--gold); font-size: 0.85rem; pointer-events: none; z-index: 1;
