@@ -334,33 +334,61 @@ Message: ${message}`;
   });
 }
 
-/* ---- Fill Route into Booking Form ---- */
+/* ---- Fill Route into Booking Form (Cross-Page & Single-Page Compatible) ---- */
 function fillRoute(from, to) {
   const pickupEl = document.getElementById('pickupLoc');
   const dropEl   = document.getElementById('dropLoc');
+  const booking  = document.getElementById('booking');
 
+  // Case 1: Booking form is on the CURRENT page
   if (pickupEl && dropEl) {
     pickupEl.value = from;
     dropEl.value   = to;
-    // Clear any error states
+
+    // Clear error states
     pickupEl.classList.remove('error');
     dropEl.classList.remove('error');
     const pe = document.getElementById('pickupLocErr');
     const de = document.getElementById('dropLocErr');
     if (pe) pe.textContent = '';
     if (de) de.textContent = '';
+
+    // Smooth scroll down to booking section
+    if (booking) {
+      const navEl = document.getElementById('navbar');
+      const navH = navEl ? navEl.offsetHeight : 0;
+      const top = booking.getBoundingClientRect().top + window.scrollY - navH - 12;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Route set: ${from} → ${to}`, 'success');
+    }
+    return;
   }
 
-  // Scroll to booking section
-  const booking = document.getElementById('booking');
-  if (booking) {
-    const navH = document.getElementById('navbar').offsetHeight;
-    const top = booking.getBoundingClientRect().top + window.scrollY - navH - 12;
-    window.scrollTo({ top, behavior: 'smooth' });
-  }
-
-  showToast(`Route set: ${from} → ${to}`, 'success');
+  // Case 2: User is on popular-routes.html -> Redirect to book-now.html with params
+  window.location.href = `book-now.html?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 }
+
+/* ---- Auto-fill Form from URL Query Params on Page Load ---- */
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const fromParam = params.get('from');
+  const toParam   = params.get('to');
+
+  if (fromParam || toParam) {
+    const pickupEl = document.getElementById('pickupLoc');
+    const dropEl   = document.getElementById('dropLoc');
+
+    if (pickupEl && fromParam) pickupEl.value = fromParam;
+    if (dropEl && toParam) dropEl.value = toParam;
+
+    if (typeof showToast === 'function' && fromParam && toParam) {
+      showToast(`Route loaded: ${fromParam} → ${toParam}`, 'success');
+    }
+  }
+});
 
 /* ---- Toast Notification ---- */
 function showToast(message, type = 'success') {
