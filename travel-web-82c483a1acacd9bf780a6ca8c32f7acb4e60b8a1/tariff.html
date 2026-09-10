@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Sitelink Snippet Tags -->
+  <title>Outstation Taxi Tariff & Per-Km Pricing | Sundari Travels</title>
+  <meta name="description" content="Transparent outstation cab tariffs with no hidden charges. Check one-way and round-trip per-km rates for Sedan (₹15/km), SUV (₹20/km), and Innova (₹21/km)." />
+  <link rel="canonical" href="https://www.sundaritravels.com/tariff.html" />
+
+  <!-- Styles & Icons -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Structured Data Schema for Tariff / Pricing Sitelink -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "PriceSpecification",
+    "name": "Sundari Travels Outstation Cab Tariff",
+    "url": "https://www.sundaritravels.com/tariff.html",
+    "priceCurrency": "INR",
+    "description": "Per kilometre rates for one-way drops and round trips across India.",
+    "eligibleQuantity": {
+      "@type": "QuantitativeValue",
+      "unitCode": "KMT",
+      "name": "Kilometre"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="book-now.html">Book Now</a>
+      <a href="tariff.html" class="active">Tariff</a>
+      <a href="popular-routes.html">Popular Routes</a>
+      <a href="contact.html">Contact Us</a>
+    </nav>
+  </header>
+
+  <!-- ===== TARIFF SECTION ===== -->
+  <section class="tariff-section" id="tariff">
+    <div class="container">
+      <div class="section-label center">Pricing</div>
+      <h1 class="section-title center">Transparent Tariff Plans</h1>
+      <p class="section-subtitle center">Straightforward pricing with no hidden costs. All rates shown are per kilometre.</p>
+      
+      <div class="tariff-tabs">
+        <button class="tariff-tab active" data-tab="oneway">One Way</button>
+        <button class="tariff-tab" data-tab="roundtrip">Round Trip</button>
+      </div>
+
+      <!-- One Way Tab -->
+      <div class="tariff-content active" id="tab-oneway">
+        <div class="tariff-grid">
+          <div class="tariff-card fade-up">
+            <div class="tariff-vehicle-icon"><i class="fas fa-car"></i></div>
+            <h3>Sedan</h3>
+            <div class="tariff-capacity"><i class="fas fa-users"></i> 4</div>
+            <div class="tariff-rate">₹<span class="rate-value" data-key="sedan-oneway">15</span><span>/km</span></div>
+            <ul class="tariff-features">
+              <li><i class="fas fa-check"></i> AC Sedan</li>
+              <li><i class="fas fa-check"></i> Comfortable seating</li>
+              <li><i class="fas fa-check"></i> Ideal for couples &amp; small groups</li>
+              <li><i class="fas fa-check"></i> Driver allowance: ₹<span data-key="sedan-da">400</span></li>
+            </ul>
+            <a href="book-now.html" class="btn btn-primary w-full">Book This Vehicle</a>
+          </div>
+
+          <div class="tariff-card featured fade-up delay-1">
+            <div class="tariff-badge">Popular</div>
+            <div class="tariff-vehicle-icon"><i class="fas fa-truck-pickup"></i></div>
+            <h3>SUV</h3>
+            <div class="tariff-capacity"><i class="fas fa-users"></i> 6</div>
+            <div class="tariff-rate">₹<span class="rate-value" data-key="suv-oneway">20</span><span>/km</span></div>
+            <ul class="tariff-features">
+              <li><i class="fas fa-check"></i> Spacious &amp; comfortable</li>
+              <li><i class="fas fa-check"></i> Ideal for families</li>
+              <li><i class="fas fa-check"></i> Driver allowance: ₹<span data-key="suv-da">500</span></li>
+            </ul>
+            <a href="book-now.html" class="btn btn-primary w-full">Book This Vehicle</a>
+          </div>
+
+          <div class="tariff-card fade-up delay-2">
+            <div class="tariff-vehicle-icon"><i class="fas fa-shuttle-van"></i></div>
+            <h3>Innova</h3>
+            <div class="tariff-capacity"><i class="fas fa-users"></i> 7</div>
+            <div class="tariff-rate">₹<span class="rate-value" data-key="innova-oneway">21</span><span>/km</span></div>
+            <ul class="tariff-features">
+              <li><i class="fas fa-check"></i> Toyota Innova</li>
+              <li><i class="fas fa-check"></i> Extra legroom &amp; luggage space</li>
+              <li><i class="fas fa-check"></i> Ideal for large groups</li>
+              <li><i class="fas fa-check"></i> Driver allowance: ₹<span data-key="innova-da">500</span></li>
+            </ul>
+            <a href="book-now.html" class="btn btn-primary w-full">Book This Vehicle</a>
+          </div>
+        </div>
+        <div class="tariff-note">
+          <i class="fas fa-info-circle"></i>
+          <span>Toll, parking and state permit charges extra as applicable. Minimum distance may apply.</span>
+        </div>
+      </div>
+
+      <!-- Round Trip Tab -->
+      <div class="tariff-content" id="tab-roundtrip">
+        <div class="tariff-grid">
+          <div class="tariff-card fade-up">
+            <div class="tariff-vehicle-icon"><i class="fas fa-car"></i></div>
+            <h3>Sedan</h3>
+            <div class="tariff-capacity"><i class="fas fa-users"></i> 4</div>
+            <div class="tariff-rate">₹<span class="rate-value" data-key="sedan-roundtrip">14</span><span>/km</span></div>
+            <ul class="tariff-features">
+              <li><i class="fas fa-check"></i> AC Sedan</li>
+              <li><i class="fas fa-check"></i> Comfortable seating</li>
+              <li><i class="fas fa-check"></i> Ideal for couples &amp; small groups</li>
+              <li><i class="fas fa-check"></i> Driver allowance: ₹<span data-key="sedan-da-rt">400</span></li>
+            </ul>
+            <a href="book-now.html" class="btn btn-primary w-full">Book This Vehicle</a>
+          </div>
+
+          <div class="tariff-card featured fade-up delay-1">
+            <div class="tariff-badge">Popular</div>
+            <div class="tariff-vehicle-icon"><i class="fas fa-truck-pickup"></i></div>
+            <h3>SUV</h3>
+            <div class="tariff-capacity"><i class="fas fa-users"></i> 6</div>
+            <div class="tariff-rate">₹<span class="rate-value" data-key="suv-roundtrip">19</span><span>/km</span></div>
+            <ul class="tariff-features">
+              <li><i class="fas fa-check"></i> Premium SUV</li>
+              <li><i class="fas fa-check"></i> Spacious &amp; comfortable</li>
+              <li><i class="fas fa-check"></i> Ideal for families</li>
+              <li><i class="fas fa-check"></i> Driver allowance: ₹<span data-key="suv-da-rt">500</span></li>
+            </ul>
+            <a href="book-now.html" class="btn btn-primary w-full">Book This Vehicle</a>
+          </div>
+
+          <div class="tariff-card fade-up delay-2">
+            <div class="tariff-vehicle-icon"><i class="fas fa-shuttle-van"></i></div>
+            <h3>Innova</h3>
+            <div class="tariff-capacity"><i class="fas fa-users"></i> 7</div>
+            <div class="tariff-rate">₹<span class="rate-value" data-key="innova-roundtrip">19</span><span>/km</span></div>
+            <ul class="tariff-features">
+              <li><i class="fas fa-check"></i> Toyota Innova</li>
+              <li><i class="fas fa-check"></i> Extra legroom &amp; luggage space</li>
+              <li><i class="fas fa-check"></i> Ideal for large groups</li>
+              <li><i class="fas fa-check"></i> Driver allowance: ₹<span data-key="innova-da-rt">500</span></li>
+            </ul>
+            <a href="book-now.html" class="btn btn-primary w-full">Book This Vehicle</a>
+          </div>
+        </div>
+        <div class="tariff-note">
+          <i class="fas fa-info-circle"></i>
+          <span>Toll, parking and state permit charges extra as applicable. Minimum 250 km/day billing may apply for round trips.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Navigation -->
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="book-now.html">Book Now</a>
+      <a href="tariff.html">Tariff &amp; Pricing</a>
+      <a href="popular-routes.html">Popular Routes</a>
+      <a href="contact.html">Contact Us</a>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="main.js"></script>
+</body>
+</html>

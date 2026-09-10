@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Sitelink Snippet Tags -->
+  <title>Book Outstation Cab Online | Sundari Travels</title>
+  <meta name="description" content="Instant 24/7 outstation taxi booking across India. Verified local drivers dispatched for one-way drops and round trips. Instant WhatsApp confirmation." />
+  <link rel="canonical" href="https://www.sundaritravels.com/book-now.html" />
+
+  <!-- Styles & Icons -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Structured Data Schema for Fast-Track Sitelinks -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TaxiService",
+    "name": "Sundari Travels",
+    "url": "https://www.sundaritravels.com/book-now.html",
+    "serviceType": "Outstation Taxi Booking",
+    "areaServed": {
+      "@type": "Country",
+      "name": "India"
+    },
+    "potentialAction": {
+      "@type": "ReserveAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://www.sundaritravels.com/book-now.html",
+        "actionPlatform": [
+          "http://schema.org/DesktopWebPlatform",
+          "http://schema.org/MobileWebPlatform"
+        ]
+      },
+      "result": {
+        "@type": "Reservation",
+        "name": "Book Taxi Online"
+      }
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="book-now.html" class="active">Book Now</a>
+      <a href="tariff.html">Tariff</a>
+      <a href="popular-routes.html">Popular Routes</a>
+      <a href="contact.html">Contact Us</a>
+    </nav>
+  </header>
+
+  <!-- ===== BOOKING SECTION ===== -->
+  <section class="booking-section" id="booking">
+    <div class="container">
+      <div class="section-label">Quick Booking</div>
+      <h1 class="section-title">Book Your Taxi in Under 2 Minutes</h1>
+      <p class="section-subtitle">Fill in your details below and get instant confirmation via WhatsApp</p>
+      <div class="booking-wrapper">
+        <div class="booking-form-card">
+          <form id="bookingForm" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="custName">Full Name <span class="req">*</span></label>
+                <input type="text" id="custName" name="custName" placeholder="Your full name" required />
+                <span class="form-error" id="custNameErr"></span>
+              </div>
+              <div class="form-group">
+                <label for="custPhone">Mobile Number <span class="req">*</span></label>
+                <input type="tel" id="custPhone" name="custPhone" placeholder="+91 XXXXX XXXXX" required />
+                <span class="form-error" id="custPhoneErr"></span>
+              </div>
+              <div class="form-group">
+                <label for="custEmail">Email Address</label>
+                <input type="email" id="custEmail" name="custEmail" placeholder="your@email.com" />
+              </div>
+              <div class="form-group">
+                <label>Trip Type <span class="req">*</span></label>
+                <div class="trip-type-group">
+                  <label class="radio-label">
+                    <input type="radio" name="tripType" value="One Way" checked />
+                    <span class="radio-custom"></span> One Way
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="tripType" value="Round Trip" />
+                    <span class="radio-custom"></span> Round Trip
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="pickupLoc">Pickup Location <span class="req">*</span></label>
+                <div class="autocomplete-wrap">
+                  <i class="fas fa-map-marker-alt ac-icon"></i>
+                  <input type="text" id="pickupLoc" name="pickupLoc" placeholder="Enter city or area" required autocomplete="off" />
+                  <ul class="autocomplete-list" id="pickupList"></ul>
+                </div>
+                <span class="form-error" id="pickupLocErr"></span>
+              </div>
+              <div class="form-group">
+                <label for="dropLoc">Drop Location <span class="req">*</span></label>
+                <div class="autocomplete-wrap">
+                  <i class="fas fa-flag-checkered ac-icon"></i>
+                  <input type="text" id="dropLoc" name="dropLoc" placeholder="Enter city or area" required autocomplete="off" />
+                  <ul class="autocomplete-list" id="dropList"></ul>
+                </div>
+                <span class="form-error" id="dropLocErr"></span>
+              </div>
+              <div class="form-group">
+                <label for="journeyDate">Journey Date <span class="req">*</span></label>
+                <input type="date" id="journeyDate" name="journeyDate" required />
+                <span class="form-error" id="journeyDateErr"></span>
+              </div>
+              <div class="form-group">
+                <label for="pickupTime">Pickup Time <span class="req">*</span></label>
+                <input type="time" id="pickupTime" name="pickupTime" required />
+                <span class="form-error" id="pickupTimeErr"></span>
+              </div>
+              <div class="form-group form-group-full">
+                <label for="vehicleType">Vehicle Type <span class="req">*</span></label>
+                <select id="vehicleType" name="vehicleType" required>
+                  <option value="">Select vehicle type</option>
+                  <option value="Sedan">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Innova">Innova</option>
+                </select>
+                <span class="form-error" id="vehicleTypeErr"></span>
+              </div>
+
+              <!-- Fare Calculator inside Booking Form -->
+              <div class="form-group form-group-full">
+                <button type="button" class="btn-calc-fare" id="bfCalcBtn">
+                  <i class="fas fa-route"></i> Calculate Distance &amp; Fare
+                </button>
+              </div>
+
+              <!-- Fare result card -->
+              <div class="form-group form-group-full" id="bfFareCard" style="display:none;">
+                <div class="bf-fare-result">
+                  <div class="bf-dist-row">
+                    <div class="bf-dt">
+                      <span class="bf-dt-lbl">Approximate Distance</span>
+                      <span class="bf-dt-val" id="bfDistance">--</span>
+                    </div>
+                  </div>
+                  <div class="bf-fare-rows">
+                    <div class="bf-fare-row"><span>Rate / km</span><span id="bfRate">₹0</span></div>
+                    <div class="bf-fare-row"><span>Base Fare</span><span id="bfBase">₹0</span></div>
+                    <div class="bf-fare-row"><span>Driver Bata</span><span id="bfBata">₹0</span></div>
+                    <div class="bf-fare-divider"></div>
+                    <div class="bf-fare-row bf-fare-total">
+                      <span>Estimated Total</span>
+                      <span id="bfTotal">₹0</span>
+                    </div>
+                  </div>
+                  <p class="bf-note"><i class="fas fa-info-circle"></i> Toll, parking &amp; permit charges extra.</p>
+                  <!-- Map -->
+                  <div class="bf-map-wrap">
+                    <div id="bfMap" class="bf-map"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group form-group-full">
+                <label for="addMessage">Additional Message</label>
+                <textarea id="addMessage" name="addMessage" rows="3" placeholder="Any special requirements, luggage details, etc."></textarea>
+              </div>
+            </div>
+            <div class="form-notice">
+              <i class="fas fa-info-circle"></i>
+              Toll, parking and state permit charges are additional and will be communicated transparently.
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-wa-book"><i class="fab fa-whatsapp"></i> Book via WhatsApp</button>
+              <a href="tel:+919600924938" class="btn btn-call-book"><i class="fas fa-phone"></i> Call to Book</a>
+            </div>
+          </form>
+        </div>
+        <div class="booking-info">
+          <div class="booking-info-card">
+            <h3>Why Book With Us?</h3>
+            <ul class="booking-why">
+              <li><i class="fas fa-check-circle"></i> Instant WhatsApp confirmation</li>
+              <li><i class="fas fa-check-circle"></i> No hidden charges</li>
+              <li><i class="fas fa-check-circle"></i> Professional drivers</li>
+              <li><i class="fas fa-check-circle"></i> Clean, well-maintained vehicles</li>
+              <li><i class="fas fa-check-circle"></i> 24×7 availability</li>
+              <li><i class="fas fa-check-circle"></i> Doorstep pickup</li>
+            </ul>
+            <div class="booking-contact-quick">
+              <a href="tel:+919600924938" class="quick-contact-btn"><i class="fas fa-phone"></i> +91 9600924938</a>
+              <a href="https://wa.me/919600924938" target="_blank" rel="noopener" class="quick-contact-btn whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp Us</a>
+            </div>
+          </div>
+          <div class="vehicle-cards-mini">
+            <div class="vehicle-mini-card">
+              <i class="fas fa-car"></i>
+              <div>
+                <strong>Sedan</strong>
+                <span>₹15/km</span>
+              </div>
+            </div>
+            <div class="vehicle-mini-card">
+              <i class="fas fa-truck-pickup"></i>
+              <div>
+                <strong>SUV</strong>
+                <span>₹20/km</span>
+              </div>
+            </div>
+            <div class="vehicle-mini-card">
+              <i class="fas fa-shuttle-van"></i>
+              <div>
+                <strong>Innova</strong>
+                <span>₹21/km</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Navigation -->
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="book-now.html">Book Now</a>
+      <a href="tariff.html">Tariff &amp; Pricing</a>
+      <a href="popular-routes.html">Popular Routes</a>
+      <a href="contact.html">Contact Us</a>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="main.js"></script>
+</body>
+</html>

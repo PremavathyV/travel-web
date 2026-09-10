@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Sitelink Snippet Tags -->
+  <title>Popular Outstation Taxi Routes & Fares | Sundari Travels</title>
+  <meta name="description" content="Book popular one-way drops and round-trip outstation cabs. Fixed packages for Bangalore, Coimbatore, Madurai, Trichy, Pondicherry, and Ooty." />
+  <link rel="canonical" href="https://www.sundaritravels.com/popular-routes.html" />
+
+  <!-- Styles & Icons -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Structured Data Schema for Popular Routes Sitelink -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Popular Outstation Routes",
+    "description": "Frequently travelled outstation taxi routes served by Sundari Travels.",
+    "itemListElement": [
+      {
+        "@type": "TravelAction",
+        "position": 1,
+        "name": "Chennai to Bangalore Taxi",
+        "distance": "346 km"
+      },
+      {
+        "@type": "TravelAction",
+        "position": 2,
+        "name": "Chennai to Coimbatore Taxi",
+        "distance": "496 km"
+      },
+      {
+        "@type": "TravelAction",
+        "position": 3,
+        "name": "Chennai to Madurai Taxi",
+        "distance": "463 km"
+      },
+      {
+        "@type": "TravelAction",
+        "position": 4,
+        "name": "Bangalore to Chennai Taxi",
+        "distance": "346 km"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="book-now.html">Book Now</a>
+      <a href="tariff.html">Tariff</a>
+      <a href="popular-routes.html" class="active">Popular Routes</a>
+      <a href="contact.html">Contact Us</a>
+    </nav>
+  </header>
+
+  <!-- ===== POPULAR ROUTES ===== -->
+  <section class="routes-section" id="routes">
+    <div class="container">
+      <div class="section-label center">Travel More</div>
+      <h1 class="section-title center">Popular Outstation Routes</h1>
+      <p class="section-subtitle center">Frequently travelled routes served by Sundari Travels. Click a route to auto-fill your booking form.</p>
+      <div class="routes-grid">
+
+        <div class="route-card fade-up" data-from="Chennai" data-to="Bangalore">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-city"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Chennai</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Bangalore</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~346 km</span>
+              <span><i class="fas fa-clock"></i> ~6 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Chennai','Bangalore')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up delay-1" data-from="Chennai" data-to="Coimbatore">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-city"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Chennai</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Coimbatore</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~496 km</span>
+              <span><i class="fas fa-clock"></i> ~8 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Chennai','Coimbatore')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up delay-2" data-from="Chennai" data-to="Madurai">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-city"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Chennai</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Madurai</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~463 km</span>
+              <span><i class="fas fa-clock"></i> ~7 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Chennai','Madurai')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up" data-from="Chennai" data-to="Trichy">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-city"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Chennai</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Trichy</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~336 km</span>
+              <span><i class="fas fa-clock"></i> ~5.5 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Chennai','Trichy')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up delay-1" data-from="Madurai" data-to="Chennai">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-city"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Madurai</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Chennai</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~463 km</span>
+              <span><i class="fas fa-clock"></i> ~7 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Madurai','Chennai')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up delay-2" data-from="Coimbatore" data-to="Ooty">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-mountain"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Coimbatore</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Ooty</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~86 km</span>
+              <span><i class="fas fa-clock"></i> ~2.5 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Coimbatore','Ooty')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up" data-from="Bangalore" data-to="Chennai">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-city"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Bangalore</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Chennai</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~346 km</span>
+              <span><i class="fas fa-clock"></i> ~6 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Bangalore','Chennai')">Book This Route</button>
+          </div>
+        </div>
+
+        <div class="route-card fade-up delay-1" data-from="Pondicherry" data-to="Chennai">
+          <div class="route-card-inner">
+            <div class="route-icon"><i class="fas fa-water"></i></div>
+            <div class="route-journey">
+              <span class="route-from">Pondicherry</span>
+              <div class="route-line"><i class="fas fa-long-arrow-alt-right"></i></div>
+              <span class="route-to">Chennai</span>
+            </div>
+            <div class="route-meta">
+              <span><i class="fas fa-road"></i> ~162 km</span>
+              <span><i class="fas fa-clock"></i> ~3 hrs</span>
+            </div>
+            <div class="route-vehicles">
+              <span class="rv">Sedan</span><span class="rv">SUV</span><span class="rv">Innova</span>
+            </div>
+            <button class="route-book-btn" onclick="fillRoute('Pondicherry','Chennai')">Book This Route</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Navigation -->
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="book-now.html">Book Now</a>
+      <a href="tariff.html">Tariff &amp; Pricing</a>
+      <a href="popular-routes.html">Popular Routes</a>
+      <a href="contact.html">Contact Us</a>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="main.js"></script>
+  <script>
+    // Route button redirect logic if book-now is on its own page
+    if (typeof fillRoute !== 'function') {
+      function fillRoute(from, to) {
+        window.location.href = 'book-now.html?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
+      }
+    }
+  </script>
+</body>
+</html>
