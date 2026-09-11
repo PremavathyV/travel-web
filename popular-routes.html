@@ -4,67 +4,132 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <!-- Google Sitelink Snippet Tags -->
-  <title>Popular Outstation Taxi Routes & Fares | Sundari Travels</title>
+  <title>Popular Outstation Taxi Routes &amp; Fares | Sundari Travels</title>
   <meta name="description" content="Book popular one-way drops and round-trip outstation cabs. Fixed packages for Bangalore, Coimbatore, Madurai, Trichy, Pondicherry, and Ooty." />
+  <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.sundaritravels.com/popular-routes.html" />
 
-  <!-- Styles & Icons -->
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-  <!-- Structured Data Schema for Popular Routes Sitelink -->
+  <!-- Structured Data Schema for Popular Routes Sitelink & Breadcrumbs -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": "Popular Outstation Routes",
-    "description": "Frequently travelled outstation taxi routes served by Sundari Travels.",
-    "itemListElement": [
+    "@graph": [
       {
-        "@type": "TravelAction",
-        "position": 1,
-        "name": "Chennai to Bangalore Taxi",
-        "distance": "346 km"
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.sundaritravels.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Popular Routes",
+            "item": "https://www.sundaritravels.com/popular-routes.html"
+          }
+        ]
       },
       {
-        "@type": "TravelAction",
-        "position": 2,
-        "name": "Chennai to Coimbatore Taxi",
-        "distance": "496 km"
-      },
-      {
-        "@type": "TravelAction",
-        "position": 3,
-        "name": "Chennai to Madurai Taxi",
-        "distance": "463 km"
-      },
-      {
-        "@type": "TravelAction",
-        "position": 4,
-        "name": "Bangalore to Chennai Taxi",
-        "distance": "346 km"
+        "@type": "ItemList",
+        "name": "Popular Outstation Taxi Routes",
+        "description": "Frequently travelled outstation taxi routes served by Sundari Travels.",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Chennai to Bangalore Taxi (346 km)",
+            "url": "https://www.sundaritravels.com/book-now.html?from=Chennai&to=Bangalore"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Chennai to Coimbatore Taxi (496 km)",
+            "url": "https://www.sundaritravels.com/book-now.html?from=Chennai&to=Coimbatore"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Chennai to Madurai Taxi (463 km)",
+            "url": "https://www.sundaritravels.com/book-now.html?from=Chennai&to=Madurai"
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": "Bangalore to Chennai Taxi (346 km)",
+            "url": "https://www.sundaritravels.com/book-now.html?from=Bangalore&to=Chennai"
+          }
+        ]
       }
     ]
   }
   </script>
 </head>
-<body>
+<body class="subpage-body">
 
   <!-- Top Navigation Bar -->
-  <header>
-    <nav class="main-nav">
-      <a href="index.html">Home</a>
-      <a href="book-now.html">Book Now</a>
-      <a href="tariff.html">Tariff</a>
-      <a href="popular-routes.html" class="active">Popular Routes</a>
-      <a href="contact.html">Contact Us</a>
-    </nav>
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo" aria-label="Sundari Travels Home">
+        <span class="logo-text-fallback" id="logoText" style="display:inline-flex;">
+          <span style="color:var(--gold);font-family:var(--font-heading);font-size:1.6rem;font-weight:700;letter-spacing:0.02em;">Sundari</span>
+          <span style="color:#b0b8c8;font-family:var(--font-heading);font-size:1.6rem;font-weight:400;letter-spacing:0.08em;margin-left:6px;">TRAVELS</span>
+        </span>
+      </a>
+      <nav class="nav-links" id="navLinks" aria-label="Main Navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="book-now.html" class="nav-link">Book Now</a>
+        <a href="tariff.html" class="nav-link">Tariff</a>
+        <a href="popular-routes.html" class="nav-link active">Popular Routes</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="book-now.html" class="nav-book-btn">Book Now</a>
+        <a href="tel:+919600924938" class="nav-phone-btn" aria-label="Call Sundari Travels"><i class="fas fa-phone"></i></a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Toggle Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </header>
 
+  <!-- Mobile Nav -->
+  <div class="mobile-nav" id="mobileNav" aria-hidden="true">
+    <div class="mobile-nav-inner">
+      <a href="index.html" class="mobile-nav-link">Home</a>
+      <a href="book-now.html" class="mobile-nav-link">Book Now</a>
+      <a href="tariff.html" class="mobile-nav-link">Tariff</a>
+      <a href="popular-routes.html" class="mobile-nav-link active">Popular Routes</a>
+      <a href="contact.html" class="mobile-nav-link">Contact</a>
+      <div class="mobile-nav-actions">
+        <a href="tel:+919600924938" class="mobile-action-btn call-btn"><i class="fas fa-phone"></i> Call Now</a>
+        <a href="https://wa.me/919600924938" target="_blank" rel="noopener" class="mobile-action-btn whatsapp-btn"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      </div>
+      <a href="book-now.html" class="mobile-book-btn">Book Your Ride</a>
+    </div>
+  </div>
+
   <!-- ===== POPULAR ROUTES ===== -->
-  <section class="routes-section" id="routes">
+  <section class="routes-section" id="routes" style="padding-top: 40px;">
     <div class="container">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb" style="text-align: center; margin-bottom: 20px;">
+        <ul class="breadcrumb-list">
+          <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+          <li class="sep">/</li>
+          <li class="current">Popular Routes</li>
+        </ul>
+      </nav>
       <div class="section-label center">Travel More</div>
       <h1 class="section-title center">Popular Outstation Routes</h1>
       <p class="section-subtitle center">Frequently travelled routes served by Sundari Travels. Click a route to auto-fill your booking form.</p>

@@ -4,61 +4,131 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <!-- Google Sitelink Snippet Tags -->
   <title>Book Outstation Cab Online | Sundari Travels</title>
   <meta name="description" content="Instant 24/7 outstation taxi booking across India. Verified local drivers dispatched for one-way drops and round trips. Instant WhatsApp confirmation." />
+  <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.sundaritravels.com/book-now.html" />
 
-  <!-- Styles & Icons -->
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-  <!-- Structured Data Schema for Fast-Track Sitelinks -->
+  <!-- Structured Data Schema for Fast-Track Sitelinks & Breadcrumbs -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "TaxiService",
-    "name": "Sundari Travels",
-    "url": "https://www.sundaritravels.com/book-now.html",
-    "serviceType": "Outstation Taxi Booking",
-    "areaServed": {
-      "@type": "Country",
-      "name": "India"
-    },
-    "potentialAction": {
-      "@type": "ReserveAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://www.sundaritravels.com/book-now.html",
-        "actionPlatform": [
-          "http://schema.org/DesktopWebPlatform",
-          "http://schema.org/MobileWebPlatform"
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.sundaritravels.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Book Now",
+            "item": "https://www.sundaritravels.com/book-now.html"
+          }
         ]
       },
-      "result": {
-        "@type": "Reservation",
-        "name": "Book Taxi Online"
+      {
+        "@type": "TaxiService",
+        "name": "Sundari Travels Online Taxi Booking",
+        "url": "https://www.sundaritravels.com/book-now.html",
+        "serviceType": "Outstation Taxi Booking",
+        "provider": {
+          "@type": "LocalBusiness",
+          "name": "Sundari Travels",
+          "telephone": "+919600924938"
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "India"
+        },
+        "potentialAction": {
+          "@type": "ReserveAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.sundaritravels.com/book-now.html",
+            "actionPlatform": [
+              "http://schema.org/DesktopWebPlatform",
+              "http://schema.org/MobileWebPlatform"
+            ]
+          },
+          "result": {
+            "@type": "Reservation",
+            "name": "Book Taxi Online"
+          }
+        }
       }
-    }
+    ]
   }
   </script>
 </head>
-<body>
+<body class="subpage-body">
 
   <!-- Top Navigation Bar -->
-  <header>
-    <nav class="main-nav">
-      <a href="index.html">Home</a>
-      <a href="book-now.html" class="active">Book Now</a>
-      <a href="tariff.html">Tariff</a>
-      <a href="popular-routes.html">Popular Routes</a>
-      <a href="contact.html">Contact Us</a>
-    </nav>
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo" aria-label="Sundari Travels Home">
+        <span class="logo-text-fallback" id="logoText" style="display:inline-flex;">
+          <span style="color:var(--gold);font-family:var(--font-heading);font-size:1.6rem;font-weight:700;letter-spacing:0.02em;">Sundari</span>
+          <span style="color:#b0b8c8;font-family:var(--font-heading);font-size:1.6rem;font-weight:400;letter-spacing:0.08em;margin-left:6px;">TRAVELS</span>
+        </span>
+      </a>
+      <nav class="nav-links" id="navLinks" aria-label="Main Navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="book-now.html" class="nav-link active">Book Now</a>
+        <a href="tariff.html" class="nav-link">Tariff</a>
+        <a href="popular-routes.html" class="nav-link">Popular Routes</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="book-now.html" class="nav-book-btn">Book Now</a>
+        <a href="tel:+919600924938" class="nav-phone-btn" aria-label="Call Sundari Travels"><i class="fas fa-phone"></i></a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Toggle Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </header>
 
+  <!-- Mobile Nav -->
+  <div class="mobile-nav" id="mobileNav" aria-hidden="true">
+    <div class="mobile-nav-inner">
+      <a href="index.html" class="mobile-nav-link">Home</a>
+      <a href="book-now.html" class="mobile-nav-link active">Book Now</a>
+      <a href="tariff.html" class="mobile-nav-link">Tariff</a>
+      <a href="popular-routes.html" class="mobile-nav-link">Popular Routes</a>
+      <a href="contact.html" class="mobile-nav-link">Contact</a>
+      <div class="mobile-nav-actions">
+        <a href="tel:+919600924938" class="mobile-action-btn call-btn"><i class="fas fa-phone"></i> Call Now</a>
+        <a href="https://wa.me/919600924938" target="_blank" rel="noopener" class="mobile-action-btn whatsapp-btn"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      </div>
+      <a href="book-now.html" class="mobile-book-btn">Book Your Ride</a>
+    </div>
+  </div>
+
   <!-- ===== BOOKING SECTION ===== -->
-  <section class="booking-section" id="booking">
+  <section class="booking-section" id="booking" style="padding-top: 40px;">
     <div class="container">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb" style="margin-bottom: 20px;">
+        <ul class="breadcrumb-list">
+          <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+          <li class="sep">/</li>
+          <li class="current">Book Now</li>
+        </ul>
+      </nav>
       <div class="section-label">Quick Booking</div>
       <h1 class="section-title">Book Your Taxi in Under 2 Minutes</h1>
       <p class="section-subtitle">Fill in your details below and get instant confirmation via WhatsApp</p>

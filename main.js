@@ -1,4 +1,4 @@
-﻿/* =====================================================
+/* =====================================================
    SUNDARI TRAVELS – Main JavaScript
    ===================================================== */
 
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBookingForm();
   initContactForm();
   initSmoothScroll();
+  initUrlParamsPrefill();
   setCopyrightYear();
   setMinDate();
 });
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ---- Navbar Scroll Behavior ---- */
 function initNavbar() {
   const navbar = document.getElementById('navbar');
+  if (!navbar) return;
   const onScroll = () => {
     if (window.scrollY > 60) {
       navbar.classList.add('scrolled');
@@ -41,6 +43,7 @@ function initNavbar() {
 function initMobileNav() {
   const hamburger = document.getElementById('hamburger');
   const mobileNav = document.getElementById('mobileNav');
+  if (!hamburger || !mobileNav) return;
 
   // Create overlay
   const overlay = document.createElement('div');
@@ -80,6 +83,7 @@ function initMobileNav() {
 /* ---- Scroll Spy (active nav link) ---- */
 function initScrollSpy() {
   const sections = Array.from(document.querySelectorAll('section[id]'));
+  if (!sections.length) return;
   const navLinks = document.querySelectorAll('.nav-link');
 
   function setActive(id) {
@@ -173,16 +177,48 @@ function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       const href = this.getAttribute('href');
-      if (href === '#') return;
-      const target = document.querySelector(href);
-      if (target) {
-        e.preventDefault();
-        const navHeight = document.getElementById('navbar').offsetHeight;
-        const top = target.getBoundingClientRect().top + window.scrollY - navHeight - 12;
-        window.scrollTo({ top, behavior: 'smooth' });
+      if (!href || href === '#') return;
+      try {
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          const navEl = document.getElementById('navbar');
+          const navHeight = navEl ? navEl.offsetHeight : 80;
+          const top = target.getBoundingClientRect().top + window.scrollY - navHeight - 12;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
+      } catch (err) {
+        // Ignore querySelector exceptions for hash routes
       }
     });
   });
+}
+
+/* ---- URL Params Prefill for Book Now page ---- */
+function initUrlParamsPrefill() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const to = params.get('to');
+    const pickup = document.getElementById('pickupLoc');
+    const drop = document.getElementById('dropLoc');
+
+    if (from && pickup) {
+      pickup.value = decodeURIComponent(from);
+    }
+    if (to && drop) {
+      drop.value = decodeURIComponent(to);
+    }
+
+    if (from && to) {
+      const calcBtn = document.getElementById('bfCalcBtn');
+      if (calcBtn) {
+        setTimeout(() => calcBtn.click(), 400);
+      }
+    }
+  } catch (e) {
+    // Ignore URL parsing errors
+  }
 }
 
 /* ---- Set Copyright Year ---- */
